@@ -1,0 +1,1 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="3" stitchTiles="stitch"/></filter><path fill="#ffffff" opacity=".15" filter="url(#n)" d="M0 0h200v200H0z"/></svg>

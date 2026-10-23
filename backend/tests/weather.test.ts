@@ -1,0 +1,77 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { currentWeather, weather } from '../src/joe/weather';
+import { getWeather } from '../src/joe/weather-tool';
+const fixture = {
+  location: { name: 'Shenzhen', region: 'Guangdong', country: 'China', tz_id: 'Asia/Shanghai' },
+  current: {
+    temp_c: 25,
+    feelslike_c: 27,
+    humidity: 65,
+    wind_kph: 12,
+    condition: { text: '多云' },
+    last_updated_epoch: 1792700000,
+  },
+};
+test('IP weather and city tool share WeatherAPI, cache results and hide credentials', async () => {
+  const original = fetch,
+    key = process.env.WEATHER_API_KEY;
+  process.env.WEATHER_API_KEY = 'secret-key';
+  const queries: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.origin, 'https://api.weatherapi.com');
+    assert.equal(url.pathname, '/v1/current.json');
+    assert.equal(url.searchParams.get('key'), 'secret-key');
+    queries.push(url.searchParams.get('q')!);
+    return Response.json(fixture);
+  };
+  try {
+    const result = await currentWeather();
+    assert.equal(result.temperature, 25);
+    assert.equal(result.condition, '多云');
+    assert.equal(result.place, 'Shenzhen · Guangdong · China');
+    assert.equal(result.timezone, 'Asia/Shanghai');
+    assert.equal(result.updatedAt, 1792700000000);
+    assert.doesNotMatch(JSON.stringify(result), /secret-key/);
+    assert.deepEqual(await currentWeather(), result);
+    const toolResult = await getWeather.execute!({ city: '东京，日本 & test' }, {} as never);
+    assert.equal(toolResult.temperature, 25);
+    assert.deepEqual(queries, ['auto:ip', '东京，日本 & test']);
+    await assert.rejects(currentWeather(AbortSignal.abort()), { name: 'AbortError' });
+  } finally {
+    globalThis.fetch = original;
+    if (key === undefined) delete process.env.WEATHER_API_KEY;
+    else process.env.WEATHER_API_KEY = key;
+  }
+});
+test('configuration, bad city, quota, malformed response and network failure are handled safely', async () => {
+  const original = fetch,
+    key = process.env.WEATHER_API_KEY;
+  try {
+    delete process.env.WEATHER_API_KEY;
+    globalThis.fetch = async () => assert.fail('must not call without key');
+    assert.deepEqual(await currentWeather(), { configured: false });
+    process.env.WEATHER_API_KEY = 'test';
+    for (const [code, message] of [
+      [1006, /未找到地点/],
+      [2007, /额度/],
+      [2006, /API Key/],
+    ] as const) {
+      globalThis.fetch = async () =>
+        Response.json({ error: { code, message: 'private details' } }, { status: 400 });
+      await assert.rejects(weather('invalid-location'), message);
+    }
+    globalThis.fetch = async () => Response.json({ current: { temp_c: 'bad' } });
+    await assert.rejects(weather('invalid-location'), /天气查询失败/);
+    globalThis.fetch = async () => {
+      throw new Error('https://api.weatherapi.com?key=secret');
+    };
+    await assert.rejects(weather('invalid-location'), /^Error: 天气查询失败，请稍后重试$/);
+    await assert.rejects(weather(' '));
+  } finally {
+    globalThis.fetch = original;
+    if (key === undefined) delete process.env.WEATHER_API_KEY;
+    else process.env.WEATHER_API_KEY = key;
+  }
+});
