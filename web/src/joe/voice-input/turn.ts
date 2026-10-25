@@ -14,6 +14,7 @@ export class SilenceDetector {
   private voicedMs = 0;
   private lastVoice = 0;
   private lastTime: number | undefined;
+  get started() { return this.voicedMs >= 250; }
   update(rms: number, now: number) {
     const elapsed = this.lastTime === undefined ? 0 : Math.max(0, Math.min(100, now - this.lastTime));
     this.lastTime = now;
@@ -25,6 +26,7 @@ export class SilenceDetector {
   }
 }
 export type InputCallbacks = {
+  speech?(): void;
   ready?(): void;
   partial(text: string): void;
   final(text: string): void;

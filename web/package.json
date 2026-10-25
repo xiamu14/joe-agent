@@ -15,6 +15,7 @@
     "@tanstack/react-router": "^1.170.0",
     "@tanstack/react-start": "^1.169.3",
     "ai": "^6.0.314",
+    "motion": "^14.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "three": "^0.180.0"

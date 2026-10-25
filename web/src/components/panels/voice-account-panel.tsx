@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { api } from '../../joe/api';
 import type { Cost, Usage, VoiceAccount } from '../../joe/types';
 
@@ -8,7 +8,7 @@ function money(cost?: Cost) {
   const amount = cost.known > 0 && cost.known < 0.0001 ? '< $0.0001' : `$${cost.known.toFixed(4)}`;
   return `${amount}${cost.pending ? ' + 待确认' : ''}`;
 }
-export function VoiceAccountPanel({ usage }: { usage?: Usage }) {
+export const VoiceAccountPanel = memo(function VoiceAccountPanel({ usage }: { usage?: Usage }) {
   const [accounts, setAccounts] = useState<VoiceAccount[]>([]);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -40,46 +40,53 @@ export function VoiceAccountPanel({ usage }: { usage?: Usage }) {
     };
   }, []);
   return (
-    <section className="rounded-2xl border border-white/5 bg-[#0c101c]/80 p-5" aria-label="费用">
-      <h2 className="text-sm text-slate-200">费用</h2>
-      <dl className="my-4 grid grid-cols-2 gap-3">
+    <section className="p-7" aria-label="费用">
+
+      <dl className="mb-8 grid grid-cols-2 gap-4">
         <div>
-          <dt className="text-[10px] text-slate-500">今日费用</dt>
-          <dd className="mt-2 font-mono text-sm text-sky-200">{money(usage?.model)}</dd>
+          <dt className="text-xs text-white/80">今日费用</dt>
+          <dd className="mt-3 text-2xl font-semibold tabular-nums text-white">{money(usage?.model)}</dd>
         </div>
         <div>
-          <dt className="text-[10px] text-slate-500">总费用</dt>
-          <dd className="mt-2 font-mono text-sm text-slate-200">{money(usage?.modelLifetime)}</dd>
+          <dt className="text-xs text-white/80">总费用</dt>
+          <dd className="mt-3 text-2xl font-semibold tabular-nums text-white">{money(usage?.modelLifetime)}</dd>
         </div>
       </dl>
-      <p className="text-[10px] text-slate-500">模型 · USD · 含估算</p>
-      <div className="mt-4 space-y-3 border-t border-white/5 pt-4">
-        {!accounts.length && <p className="text-[11px] text-slate-400">{error || '语音账单查询中…'}</p>}
+      <p className="text-xs text-white/80">模型 · USD · 含估算</p>
+      <div className="mt-7 space-y-6 rounded-3xl bg-white/5 p-5">
+        {!accounts.length && <p className="text-sm text-white/80">{error || '语音账单查询中…'}</p>}
         {accounts.map((account) => (
-          <div key={account.provider} className="flex items-baseline justify-between gap-3 text-[11px]">
-            <span className="text-slate-500">
+          <div key={account.provider} className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="text-white/80">
               {account.provider}
-              <span className="mt-1 block text-[9px]">
-                {account.balance !== undefined ? '账户余额' : '下期账单'}
+              <span className="mt-1 block text-[11px]">
+                {account.balance !== undefined || account.remainingCredits !== undefined
+                  ? '账户余额'
+                  : '下期账单'}
               </span>
             </span>
             {account.error ? (
-              <span className="text-right text-amber-200" title={account.error}>
+              <span className="text-right text-white" title={account.error}>
                 查询失败
               </span>
             ) : (
-              <span className="text-right font-mono text-slate-300">
+              <span
+                className="text-right font-mono text-white/90"
+                title={account.remainingCredits === undefined ? undefined : `${account.remainingCredits} credits`}
+              >
                 {account.balance !== undefined
-                  ? `${account.balance} credits`
-                  : account.nextInvoice != null && account.currency
-                    ? `${account.currency.toUpperCase()} ${account.nextInvoice.toFixed(2)}`
-                    : '未返回'}
+                  ? `${account.remainingCredits === undefined ? '' : '≈ '}USD ${Number(account.balance).toFixed(4)}`
+                  : account.remainingCredits !== undefined
+                    ? '待配置美元费率'
+                    : account.nextInvoice != null && account.currency
+                      ? `${account.currency.toUpperCase()} ${account.nextInvoice.toFixed(2)}`
+                      : account.nextInvoice != null ? '账单币种未知' : '暂无下期账单'}
               </span>
             )}
           </div>
         ))}
-        <p className="text-[9px] text-slate-600">语音为账户账单，含其他应用用量</p>
+        <p className="text-[11px] text-white/80">语音为账户账单，含其他应用用量</p>
       </div>
     </section>
   );
-}
+});

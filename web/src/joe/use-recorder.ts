@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { api, jsonBody } from './api';
 import { startRealtime } from './voice-input/realtime';
 import { startBatch } from './voice-input/batch';
-import { startIdleTimeout } from './voice-input/idle-timeout';
 export function useRecorder(
   sessionId: string,
   onText: (text: string) => void,
   onState: (state: 'idle' | 'listening' | 'transcribing' | 'error') => void,
   onError: (message: string) => void,
+  onSpeech?: () => void,
 ) {
   const [recording, setRecording] = useState(false),
     [transcribing, setTranscribing] = useState(false);
@@ -16,8 +16,8 @@ export function useRecorder(
   const epoch = useRef(0),
     cleanup = useRef<(() => void) | null>(null),
     active = useRef(false);
-  const callbacks = useRef({ onText, onState, onError });
-  callbacks.current = { onText, onState, onError };
+  const callbacks = useRef({ onText, onState, onError, onSpeech });
+  callbacks.current = { onText, onState, onError, onSpeech };
   function release() {
     epoch.current++;
     active.current = false;
@@ -29,14 +29,12 @@ export function useRecorder(
     setRecording(false);
     setTranscribing(false);
     setTranscript('');
+    setMode('');
     callbacks.current.onState('idle');
   }
   useEffect(() => () => release(), []);
-  async function toggle() {
-    if (active.current) {
-      cancel();
-      return;
-    }
+  async function start() {
+    if (active.current) return;
     active.current = true;
     const token = ++epoch.current;
     setRecording(true);
@@ -46,11 +44,9 @@ export function useRecorder(
     const abort = new AbortController();
     let stream: MediaStream | undefined,
       context: AudioContext | undefined,
-      stopInput: (() => void) | undefined,
-      stopIdleTimeout: (() => void) | undefined;
+      stopInput: (() => void) | undefined;
     cleanup.current = () => {
       abort.abort();
-      stopIdleTimeout?.();
       stopInput?.();
       stream?.getTracks().forEach((track) => track.stop());
       void context?.close().catch(() => {});
@@ -60,6 +56,7 @@ export function useRecorder(
       release();
       setRecording(false);
       setTranscribing(false);
+      setMode('');
       callbacks.current.onState('error');
       callbacks.current.onError(message);
     };
@@ -88,17 +85,23 @@ export function useRecorder(
         signal: abort.signal,
       });
       if (token !== epoch.current) return;
+      let utteranceStarted = false;
+      const speech = () => {
+        if (token !== epoch.current || utteranceStarted) return;
+        utteranceStarted = true;
+        callbacks.current.onSpeech?.();
+      };
       const handlers = {
+        speech,
         ready: () => {
           if (token !== epoch.current) return;
           setMode(config.mode);
-          stopIdleTimeout?.();
-          stopIdleTimeout = startIdleTimeout(stream!, context!, () => {
-            if (token === epoch.current) cancel();
-          });
         },
         partial: (text: string) => {
-          if (token === epoch.current) setTranscript(text);
+          if (token === epoch.current) {
+            if (text.trim()) speech();
+            setTranscript(text);
+          }
         },
         final: (text: string) => {
           if (token !== epoch.current) return;
@@ -106,6 +109,7 @@ export function useRecorder(
           setTranscript('');
           callbacks.current.onState('listening');
           callbacks.current.onText(text);
+          utteranceStarted = false;
         },
         error: fail,
         transcribing: () => {
@@ -127,5 +131,5 @@ export function useRecorder(
       fail(error instanceof Error ? error.message : '无法开启语音输入');
     }
   }
-  return { recording, transcribing, transcript, mode, toggle, cancel };
+  return { recording, transcribing, transcript, mode, start, toggle: () => active.current ? cancel() : start(), cancel };
 }

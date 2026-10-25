@@ -48,6 +48,30 @@ test('settings default to auto, persist a selected profile and reject invalid la
   assert.equal(store.saveSettings({ voiceLanguage: 'zh' }).voiceLanguage, 'zh');
   assert.equal(store.settings().voiceLanguage, 'zh');
   assert.throws(() => settingsSchema.parse({ voiceLanguage: 'invalid' }));
+  assert.equal(store.settings().defaultMuted, false);
+  assert.equal(store.saveSettings({ defaultMuted: true }).defaultMuted, true);
+});
+
+test('per-message reading translations support both roles without configured TTS voices', async () => {
+  const original = Agent.prototype.generate;
+  const ids = conversation('How are you?', 'I am here.');
+  delete process.env.ELEVENLABS_VOICE_ID_ZH;
+  Agent.prototype.generate = (async (message: string) => {
+    const input = JSON.parse(message);
+    assert.equal(input.requestedLanguage, 'auto');
+    return { object: { language: 'zh', text: '中文译文' }, totalUsage: {} };
+  }) as typeof Agent.prototype.generate;
+  try {
+    for (const message of store.messages(ids.sessionId)) {
+      const result = await prepareSpeech({ ...ids, messageId: message.id, language: 'auto', purpose: 'translation' }, new AbortController().signal);
+      assert.deepEqual(result, { language: 'zh', text: '中文译文' });
+    }
+    await assert.rejects(prepareSpeech({ ...ids, messageId: randomUUID(), language: 'auto', purpose: 'translation' }, new AbortController().signal), /未完成/);
+    await assert.rejects(prepareSpeech({ ...ids, sessionId: store.session(), messageId: store.messages(ids.sessionId)[0].id, language: 'auto', purpose: 'translation' }, new AbortController().signal), /未完成/);
+  } finally {
+    Agent.prototype.generate = original;
+    process.env.ELEVENLABS_VOICE_ID_ZH = 'chinese-voice';
+  }
 });
 
 test('both translation directions use one generation and bind TTS to the selected voice', async () => {

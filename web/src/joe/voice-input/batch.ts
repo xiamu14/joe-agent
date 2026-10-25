@@ -20,10 +20,17 @@ export function startBatch(
   const abort = new AbortController();
   let size = 0,
     closed = false;
+  let segmentStart = performance.now(), announced = false;
   const interval = setInterval(() => {
     analyser.getFloatTimeDomainData(samples);
     const rms = Math.sqrt(samples.reduce((sum, value) => sum + value * value, 0) / samples.length);
-    if (detector.update(rms, performance.now()) && recorder.state === 'recording') recorder.stop();
+    const now = performance.now();
+    const ended = detector.update(rms, now);
+    if (detector.started && !announced) {
+      announced = true;
+      callbacks.speech?.();
+    }
+    if ((ended || (!detector.started && now - segmentStart >= 15000)) && recorder.state === 'recording') recorder.stop();
   }, 50);
   function cleanup() {
     if (closed) return;
@@ -50,7 +57,7 @@ export function startBatch(
   let pending = Promise.resolve();
   recorder.onstop = () => {
     if (closed) return;
-    callbacks.transcribing();
+    const hasSpeech = detector.started;
     const body = new FormData();
     body.set('sessionId', sessionId);
     const ext = recorder.mimeType.includes('mp4')
@@ -62,7 +69,11 @@ export function startBatch(
     chunks = [];
     size = 0;
     detector = new SilenceDetector();
+    segmentStart = performance.now();
+    announced = false;
     recorder.start(250);
+    if (!hasSpeech) return;
+    callbacks.transcribing();
     pending = pending.then(async () => {
       if (closed) return;
       try {

@@ -15,6 +15,7 @@ export const expressionSchema = z.object({
 export const answerSchema = z.object({
   expression: expressionSchema,
   text: z.string().min(1),
+  card: z.enum(['time', 'costs', 'background', 'settings']).optional(),
 });
 export type Expression = z.infer<typeof expressionSchema>;
 export const fallbackExpression: Expression = {
@@ -25,6 +26,7 @@ export const idSchema = z.string().uuid();
 export const voiceLanguageSchema = z.enum(['auto', 'en', 'zh']);
 export const settingsSchema = z.object({
   voice: z.boolean().default(true),
+  defaultMuted: z.boolean().default(false),
   voiceLanguage: voiceLanguageSchema.default('auto'),
   model: z.string().max(150).default(''),
   city: z.string().max(100).default(''),

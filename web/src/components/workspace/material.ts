@@ -1,0 +1,3 @@
+export const glass = 'bg-[linear-gradient(135deg,rgba(20,37,64,0.84),rgba(25,51,78,0.80))] backdrop-blur-[24px] backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_16px_48px_-24px_rgba(15,35,65,0.4)]';
+export const roundButton = 'flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-35';
+export const pillButton = 'rounded-full bg-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-35';

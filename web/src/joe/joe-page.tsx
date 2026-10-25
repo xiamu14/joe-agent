@@ -1,113 +1,81 @@
-import { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Button } from '@base-ui/react/button';
+import { MotionConfig } from 'motion/react';
 import { ThoughtOrb } from '../components/thought-orb';
 import { MessageList } from '../components/conversation/messages';
 import { Composer } from '../components/conversation/composer';
 import { InfoPanel } from '../components/panels/info-panel';
 import { SettingsPanel } from '../components/panels/settings-panel';
+import { VoiceAccountPanel } from '../components/panels/voice-account-panel';
+import { Background, BackgroundPicker, backgrounds, type BackgroundId } from '../components/workspace/background';
+import { CardFrame } from '../components/workspace/card-frame';
+import { CardOverview, VoicePermission } from '../components/workspace/overlays';
+import { Dock } from '../components/workspace/dock';
+import { Icon } from '../components/workspace/icon';
+import { roundButton } from '../components/workspace/material';
+import { initialWorkspace, openCard, closeCard, swapCards, cardNames, type CardId } from './workspace-state';
 import { useJoe } from './use-joe';
+import { useVoiceInput } from './use-voice-input';
 import { agentVisual } from './visual';
-import type { CSSProperties } from 'react';
+const panelBody = 'h-full overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#ffffff30_transparent]';
+
 export function JoePage() {
-  const joe = useJoe(),
-    [panel, setPanel] = useState<'info' | 'settings' | null>(null);
-  const visual = agentVisual(joe.state, joe.expression, joe.level);
+  const joe = useJoe();
+  const voice = useVoiceInput(joe);
+  const [workspace, setWorkspace] = useState(initialWorkspace);
+  const [overview, setOverview] = useState(false);
+  const [background, setBackground] = useState<BackgroundId>('sky');
+  useEffect(() => {
+    const saved = localStorage.getItem('joe.background');
+    if (saved && Object.hasOwn(backgrounds, saved)) setBackground(saved as BackgroundId);
+  }, []);
+  useEffect(() => {
+    if (joe.cardRequest) setWorkspace(current => openCard(current, joe.cardRequest!.card));
+  }, [joe.cardRequest]);
+  function open(card: CardId) { setOverview(false); setWorkspace(current => openCard(current, card)); }
+  const conversationPrimary = workspace.primary === 'conversation';
+  const idle = joe.state === 'idle' || joe.state === 'interrupted';
+  const state = idle ? voice.state === 'error' ? 'error' : voice.transcribing ? 'transcribing' : voice.recording ? voice.mode ? 'listening' : 'blocked' : 'idle' : joe.state;
+  const visual = useMemo(() => agentVisual(state, joe.expression, 0), [state, joe.expression]);
+  const blocked = overview || voice.asking;
+  const swap = () => setWorkspace(swapCards);
+
   return (
-    <div
-      className="flex h-dvh min-h-[560px] flex-col overflow-hidden bg-[#05070e]"
-      style={{ '--accent': visual.color } as CSSProperties}
-    >
-      <header className="mx-[3%] flex h-20 shrink-0 items-center justify-between ">
-        <Link
-          to="/joe"
-          className="flex items-center gap-3 text-[35px] font-semibold tracking-[-2px] text-[#f0f2ff] no-underline max-sm:text-[29px]"
-        >
-          <span className="text-[32px] font-light tracking-normal text-[#b2bdff] max-sm:text-[27px]">✳</span>
-          Joe<span className="-ml-3 text-[#8198e5]">.</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/preview" className="text-xs text-slate-500">
-            视觉实验室 ↗
-          </Link>
-          <Button
-            className="text-xs text-sky-200"
-            disabled={!joe.sessionId || joe.busy || joe.uploading}
-            onClick={() => void joe.newSession()}
-          >
-            新会话 ＋
-          </Button>
-        </div>
-      </header>
-      <div className="flex justify-between px-5 pt-3 lg:hidden">
-        <Button
-          aria-expanded={panel === 'info'}
-          onClick={() => setPanel(panel === 'info' ? null : 'info')}
-          className="text-xs text-slate-400"
-        >
-          信息
-        </Button>
-        <Button
-          aria-expanded={panel === 'settings'}
-          onClick={() => setPanel(panel === 'settings' ? null : 'settings')}
-          className="text-xs text-slate-400"
-        >
-          设置
-        </Button>
+    <MotionConfig reducedMotion="user">
+      <div className="relative h-dvh overflow-hidden font-semibold text-white [color-scheme:light]" style={{ '--accent': visual.color } as CSSProperties}>
+        <Background selected={background} />
+        <main className="absolute inset-x-0 bottom-[112px] top-5 [perspective:1400px]" aria-label="交互空间">
+          <CardFrame title="对话" primary={conversationPrimary} visible={workspace.conversation} blocked={blocked} onPromote={() => open('conversation')} onSwap={swap}
+            actions={<Button className={roundButton} aria-label="新对话" disabled={!joe.sessionId || joe.uploading} onClick={() => void joe.newSession()}><Icon name="plus" /></Button>}>
+            <div className="relative mx-auto -mt-4 h-[150px] w-[200px] shrink-0 max-sm:h-[115px] [@media(max-height:500px)]:hidden" aria-label={voice.status}>
+              <ThoughtOrb level={joe.level} visual={visual} compact active={conversationPrimary && !blocked} />
+            </div>
+            {!joe.bootstrap?.configured.llm && <div className="mx-6 mb-3 flex items-center justify-between gap-3 rounded-2xl bg-black/10 p-3 text-xs text-white/80" role="status">
+              <span>{joe.state === 'offline' ? '服务未连接' : '等待模型配置'}</span>
+              <Button className="rounded-lg px-2 py-1 text-white" onClick={() => void joe.reconnect()}>重新连接</Button>
+            </div>}
+            <MessageList key={`messages-${joe.sessionId}`} messages={joe.messages} />
+            {joe.error && <div role="alert" className="mx-5 mb-3 flex items-start gap-3 rounded-2xl bg-black/15 p-3 text-xs leading-5">
+              <span className="flex-1">{joe.error}</span><Button aria-label="关闭提示" onClick={() => joe.setError('')}><Icon name="close" className="size-4" /></Button>
+            </div>}
+            <Composer key={`composer-${joe.sessionId}`} joe={joe} voice={voice} />
+          </CardFrame>
+          <CardFrame title={cardNames[workspace.ordinary || 'costs']} primary={!conversationPrimary} visible={Boolean(workspace.ordinary)} blocked={blocked} compact={workspace.ordinary === 'costs' || workspace.ordinary === 'background'}
+            onPromote={() => workspace.ordinary && open(workspace.ordinary)} onSwap={swap}
+            onClose={() => workspace.ordinary && setWorkspace(current => closeCard(current, workspace.ordinary!))}>
+            <div className="min-h-0 flex-1">
+              <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><VoiceAccountPanel usage={joe.bootstrap?.usage} /></div>
+              <div hidden={workspace.ordinary !== 'time'} className={panelBody}><InfoPanel bootstrap={joe.bootstrap} /></div>
+              <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
+              <div hidden={workspace.ordinary !== 'background'} className={panelBody}><BackgroundPicker selected={background} onSelect={id => { setBackground(id); localStorage.setItem('joe.background', id); }} /></div>
+            </div>
+          </CardFrame>
+        </main>
+        <Dock level={joe.level} timezone={joe.bootstrap?.settings.timezone || 'Asia/Shanghai'} visual={visual} active={!conversationPrimary && !voice.asking} status={voice.status}
+          overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onBackground={() => open('background')} onConversation={() => open('conversation')} />
+        <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} />
+        <VoicePermission open={voice.asking} ready={voice.ready} onEnable={voice.enable} onSkip={voice.skip} />
       </div>
-      <main className="mx-auto grid min-h-0 w-full max-w-[1800px] flex-1 grid-cols-[240px_minmax(0,1fr)_240px] gap-5 px-[3%] py-5 max-xl:grid-cols-[210px_minmax(0,1fr)_210px] max-lg:grid-cols-1 max-lg:px-3 max-lg:py-2">
-        <aside
-          className={`min-h-0 overflow-y-auto scrollbar-none ${panel === 'info' ? 'max-lg:fixed max-lg:inset-x-3 max-lg:top-28 max-lg:bottom-4 max-lg:z-40 max-lg:rounded-2xl max-lg:border max-lg:border-white/10 max-lg:bg-[#080c16] max-lg:p-4' : 'max-lg:hidden'}`}
-          aria-label="信息面板"
-        >
-          {panel === 'info' && (
-            <Button className="mb-3 text-sm lg:hidden" onClick={() => setPanel(null)}>
-              关闭 ×
-            </Button>
-          )}
-          <InfoPanel bootstrap={joe.bootstrap} />
-        </aside>
-        <section
-          className="relative flex min-h-0 flex-col rounded-2xl "
-          aria-label="Joe 会话"
-        >
-          <div className="relative h-[32vh] min-h-[190px] max-h-[340px] shrink-0">
-            <ThoughtOrb visual={visual} compact />
-          </div>
-          {!joe.bootstrap?.configured.llm && (
-            <div className="mx-4 rounded-xl border border-blue-300/10 bg-blue-300/5 p-3 text-xs leading-relaxed text-slate-400">
-              {joe.state === 'offline' ? 'Joe 服务未连接。' : '等待模型配置。'}
-              <Button className="ml-2 text-sky-300" disabled={joe.busy} onClick={() => void joe.reconnect()}>
-                重新连接
-              </Button>
-            </div>
-          )}
-          <MessageList messages={joe.messages} />
-          {joe.error && (
-            <div
-              role="alert"
-              className="mx-4 mb-2 flex items-start justify-between gap-2 rounded-lg border border-amber-300/15 bg-amber-300/5 p-3 text-xs text-amber-200"
-            >
-              <span>{joe.error}</span>
-              <Button aria-label="关闭提示" onClick={() => joe.setError('')}>
-                ×
-              </Button>
-            </div>
-          )}
-          <Composer key={joe.sessionId} joe={joe} />
-        </section>
-        <aside
-          className={`min-h-0 overflow-y-auto scrollbar-none ${panel === 'settings' ? 'max-lg:fixed max-lg:inset-x-3 max-lg:top-28 max-lg:bottom-4 max-lg:z-40 max-lg:rounded-2xl max-lg:border max-lg:border-white/10 max-lg:bg-[#080c16] max-lg:p-4' : 'max-lg:hidden'}`}
-          aria-label="设置面板"
-        >
-          {panel === 'settings' && (
-            <Button className="mb-3 text-sm lg:hidden" onClick={() => setPanel(null)}>
-              关闭 ×
-            </Button>
-          )}
-          <SettingsPanel joe={joe} />
-        </aside>
-      </main>
-    </div>
+    </MotionConfig>
   );
 }

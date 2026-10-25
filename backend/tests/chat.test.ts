@@ -46,7 +46,7 @@ test('Mastra streams through the configured adapter and persists expression and 
             index: 0,
             delta: {
               role: 'assistant',
-              content: '{"expression":{"emotion":"joy","intensity":0.7},"text":"你好。"}',
+              content: '{"expression":{"emotion":"joy","intensity":0.7},"text":"你好。","card":"costs"}',
             },
             finish_reason: null,
           },
@@ -84,6 +84,7 @@ test('Mastra streams through the configured adapter and persists expression and 
     assert.equal(completed.message.status, 'complete', JSON.stringify(events));
     assert.equal(completed.message.text, '你好。');
     assert.equal(completed.message.expression.emotion, 'joy');
+    assert.deepEqual(events.find(e => e.type === 'card.open'), { type: 'card.open', sessionId, turnId, card: 'costs' });
     assert.equal(store.messages(sessionId).length, 0, 'new messages must not duplicate into Joe SQLite');
     assert.equal((await conversationMessages(sessionId)).length, 2);
     assert.equal((await conversationMessages(sessionId))[1].text, '你好。');

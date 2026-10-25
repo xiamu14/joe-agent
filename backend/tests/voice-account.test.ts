@@ -61,8 +61,63 @@ test('Fish wallet preserves decimal balance and missing invoices are not zero', 
   try {
     const { accounts } = await voiceAccounts();
     assert.equal(accounts[0].balance, '12.3456789');
+    assert.equal(accounts[0].currency, 'usd');
     assert.equal(accounts[1].nextInvoice, null);
     assert.equal(accounts[1].currency, null);
+  } finally {
+    globalThis.fetch = original;
+    process.env = env;
+  }
+});
+
+test('PAYG credits convert to USD with the actual top-up rate and invalidate cached rates', async () => {
+  const original = fetch, env = { ...process.env };
+  process.env.JOE_ASR_PROVIDER = process.env.JOE_TTS_PROVIDER = 'elevenlabs';
+  process.env.ELEVENLABS_API_KEY = 'payg-account';
+  delete process.env.ELEVENLABS_USD_PER_1000_CREDITS;
+  let used = 186;
+  globalThis.fetch = async () => Response.json({
+    tier: 'payg', character_count: used, character_limit: 23736,
+    currency: 'usd', next_invoice: null,
+  });
+  try {
+    let account = (await voiceAccounts()).accounts[0];
+    assert.equal(account.nextInvoice, null);
+    assert.equal(account.remainingCredits, 23550);
+    assert.equal(account.balance, undefined);
+    process.env.ELEVENLABS_USD_PER_1000_CREDITS = '0.364';
+    account = (await voiceAccounts()).accounts[0];
+    assert.equal(Number(account.balance).toFixed(4), '8.5722');
+    process.env.ELEVENLABS_USD_PER_1000_CREDITS = '0.3';
+    account = (await voiceAccounts()).accounts[0];
+    assert.equal(Number(account.balance), 7.065);
+    used = 24000;
+    process.env.ELEVENLABS_USD_PER_1000_CREDITS = '0.4';
+    account = (await voiceAccounts()).accounts[0];
+    assert.equal(account.balance, '0');
+    for (const rate of ['-1', '0', 'NaN', 'Infinity', '1e309', 'invalid']) {
+      process.env.ELEVENLABS_USD_PER_1000_CREDITS = rate;
+      account = (await voiceAccounts()).accounts[0];
+      assert.match(account.error!, /费率/);
+      assert.equal(account.balance, undefined);
+    }
+  } finally {
+    globalThis.fetch = original;
+    process.env = env;
+  }
+});
+
+test('invalid Fish wallet amounts do not become dollar balances', async () => {
+  const original = fetch, env = { ...process.env };
+  process.env.JOE_ASR_PROVIDER = process.env.JOE_TTS_PROVIDER = 'fish';
+  try {
+    for (const credit of ['NaN', '-1', '9'.repeat(400)]) {
+      process.env.FISH_API_TOKEN = `invalid-wallet-${credit}`;
+      globalThis.fetch = async () => Response.json({ credit });
+      const account = (await voiceAccounts()).accounts[0];
+      assert.ok(account.error);
+      assert.equal(account.balance, undefined);
+    }
   } finally {
     globalThis.fetch = original;
     process.env = env;

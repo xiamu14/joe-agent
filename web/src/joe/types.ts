@@ -31,6 +31,7 @@ export type Message = {
 };
 export type Settings = {
   voice: boolean;
+  defaultMuted: boolean;
   voiceLanguage: 'auto' | 'en' | 'zh';
   model: string;
   city: string;
@@ -81,6 +82,7 @@ export type AgentEvent = {
   user?: Message;
   assistant?: Message;
   sources?: { title: string; url: string }[];
+  card?: 'time' | 'costs' | 'background' | 'settings';
 };
 
 export type VoiceAccount = {
@@ -94,4 +96,5 @@ export type VoiceAccount = {
   nextInvoice?: number | null;
   currency?: string | null;
   balance?: string;
+  remainingCredits?: number;
 };

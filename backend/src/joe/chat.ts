@@ -165,6 +165,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         if (!final.text.startsWith(answer.text))
           throw new Error('Structured output changed its streamed prefix');
         update(final);
+        if (final.card) emit('card.open', { card: final.card });
 
         if (!answer.text.trim()) throw new Error('模型未返回正文');
         const usage = await result.totalUsage;

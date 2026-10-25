@@ -1,138 +1,50 @@
 import { useRef, useState } from 'react';
 import { Button } from '@base-ui/react/button';
 import { Input } from '@base-ui/react/input';
-import { useRecorder } from '../../joe/use-recorder';
 import type { useJoe } from '../../joe/use-joe';
-type Joe = ReturnType<typeof useJoe>;
-export function Composer({ joe }: { joe: Joe }) {
+import type { useVoiceInput } from '../../joe/use-voice-input';
+import { Icon } from '../workspace/icon';
+import { roundButton } from '../workspace/material';
+
+type Props = { joe: ReturnType<typeof useJoe>; voice: ReturnType<typeof useVoiceInput> };
+export function Composer({ joe, voice }: Props) {
   const [text, setText] = useState('');
   const file = useRef<HTMLInputElement>(null);
-  const recorder = useRecorder(
-    joe.sessionId,
-    (value) => {
-      const message = [text.trim(), value].filter(Boolean).join('\n');
-      setText('');
-      void joe.send(message, true).then((accepted) => {
-        if (!accepted) setText((current) => current || message);
-      });
-    },
-    joe.setState,
-    joe.setError,
-  );
-  const canSend = Boolean(
-    joe.bootstrap?.configured.llm && joe.sessionId && !recorder.recording && !recorder.transcribing,
-  );
+  const canSend = Boolean(joe.bootstrap?.configured.llm && joe.sessionId && !joe.uploading && (text.trim() || joe.attachments.length));
   async function submit() {
     const value = text;
-    if (await joe.send(value)) setText((current) => (current === value ? '' : current));
+    setText('');
+    if (!await joe.send(value)) setText(current => current || value);
   }
   return (
-    <div className="mx-3 mb-3 shrink-0 rounded-2xl border border-white/10 bg-[#101625] px-3 py-2">
-      {joe.attachments.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {joe.attachments.map((a) => (
-            <span key={a.id} className="flex items-center gap-2 rounded-lg bg-white/5 px-2 py-1 text-xs">
-              {a.name}
-              <Button
-                disabled={joe.busy}
-                onClick={() => void joe.removeAttachment(a.id)}
-                aria-label={`移除 ${a.name}`}
-              >
-                ×
-              </Button>
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="flex items-center gap-2">
-        <Input
-          ref={file}
-          type="file"
-          accept=".md,.txt"
-          className="sr-only"
-          aria-label="上传文本附件"
-          disabled={joe.busy || joe.uploading || !joe.sessionId}
-          onChange={(e) => {
-            const selected = e.target.files?.[0];
-            if (selected) void joe.upload(selected);
-            e.target.value = '';
-          }}
-        />
-        <Button
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-30"
-          aria-label="添加附件"
-          disabled={
-            !joe.sessionId || joe.busy || joe.uploading || recorder.recording || joe.attachments.length >= 5
-          }
-          onClick={() => file.current?.click()}
-        >
-          ＋
+    <div className="shrink-0 px-5 pb-5">
+      {voice.unsent.length > 0 && <div className="mb-3 max-h-24 overflow-y-auto rounded-2xl bg-white/5 px-3 py-2 text-xs" aria-label="未发送的语音">
+        {voice.unsent.map(message => <div key={message.id} className="flex items-start gap-3 py-1">
+          <span className="flex-1 whitespace-pre-wrap break-words">{message.text}</span>
+          <Button disabled={!joe.sessionId || joe.uploading} onClick={() => void voice.retry(message.id)} className="shrink-0 rounded-lg px-2 py-1 text-white/80">重发</Button>
+        </div>)}
+      </div>}
+      {joe.attachments.length > 0 && <div className="mb-3 flex flex-wrap gap-2">
+        {joe.attachments.map(a => <span key={a.id} className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5 text-xs">
+          {a.name}<Button disabled={joe.busy} onClick={() => void joe.removeAttachment(a.id)} aria-label={`移除 ${a.name}`}>×</Button>
+        </span>)}
+      </div>}
+      {voice.transcript && <p className="mb-3 px-3 text-sm text-white/80" role="status">{voice.transcript}</p>}
+      <div className="flex items-center gap-1.5 rounded-[28px] bg-slate-950/25 p-2 shadow-[inset_0_1px_1px_#ffffff20]">
+        <Input ref={file} type="file" accept=".md,.txt" className="sr-only" aria-label="上传文本附件" disabled={joe.busy || joe.uploading || !joe.sessionId}
+          onChange={event => { const selected = event.target.files?.[0]; if (selected) void joe.upload(selected); event.target.value = ''; }} />
+        <Button className={`${roundButton} bg-transparent`} aria-label="添加附件" disabled={!joe.sessionId || joe.busy || joe.uploading || joe.attachments.length >= 5} onClick={() => file.current?.click()}><Icon name="plus" /></Button>
+        <Input className="min-w-0 flex-1 bg-transparent py-2 text-sm font-semibold text-white outline-none placeholder:text-white/80"
+          value={text} onValueChange={setText} maxLength={12000} placeholder="说点什么…" aria-label="消息" onFocus={joe.unlock}
+          onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && canSend) { event.preventDefault(); void submit(); } }} />
+        <Button className={`${roundButton} ${voice.muted || voice.state === 'error' ? 'bg-white/15' : 'bg-transparent'}`} disabled={!voice.ready}
+          aria-label={voice.recording ? '静音麦克风' : voice.state === 'error' ? '重试语音' : '恢复接听'} aria-pressed={voice.muted} title={voice.status} onClick={voice.toggleMuted}>
+          <Icon name={voice.recording ? 'mic' : 'muted'} />
         </Button>
-        <Input
-          className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-slate-600"
-          value={recorder.recording ? recorder.transcript || text : text}
-          readOnly={recorder.recording || recorder.transcribing}
-          onValueChange={setText}
-          maxLength={12000}
-          placeholder={
-            recorder.recording ? (recorder.mode ? '正在倾听，停顿后自动发送…' : '正在连接…') : '输入消息…'
-          }
-          aria-label="消息"
-          onFocus={joe.unlock}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing && !joe.busy && canSend) {
-              e.preventDefault();
-              void submit();
-            }
-          }}
-        />
-        <Button
-          className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xl hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-30 ${recorder.recording ? 'text-rose-300 ring-1 ring-rose-400/50' : 'text-slate-400'}`}
-          disabled={
-            !joe.bootstrap?.configured.asr ||
-            !joe.bootstrap?.configured.llm ||
-            joe.uploading ||
-            !joe.sessionId
-          }
-          aria-label={recorder.recording || recorder.transcribing ? '停止语音输入' : '开启语音输入'}
-          aria-pressed={recorder.recording || recorder.transcribing}
-          onClick={() => {
-            joe.unlock();
-            if (!recorder.recording && (joe.busy || joe.voicePending)) joe.stop();
-            void recorder.toggle();
-          }}
-        >
-          {recorder.recording || recorder.transcribing ? '■' : '◉'}
-        </Button>
-        {recorder.recording || recorder.transcribing ? (
-          <span className="px-2 text-xs text-sky-200">
-            {recorder.transcribing ? '识别中…' : recorder.mode ? '倾听中…' : '连接中…'}
-          </span>
-        ) : joe.busy || joe.voicePending ? (
-          <Button
-            className="shrink-0 rounded-xl border border-blue-300/20 bg-blue-400/15 px-3 py-2 text-xs text-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
-            onClick={() => {
-              recorder.cancel();
-              joe.stop();
-            }}
-          >
-            停止
-          </Button>
-        ) : (
-          <Button
-            className="shrink-0 rounded-xl border border-blue-300/20 bg-blue-400/15 px-3 py-2 text-xs text-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
-            disabled={!canSend || joe.uploading || (!text.trim() && !joe.attachments.length)}
-            onClick={() => void submit()}
-          >
-            发送 ↑
-          </Button>
-        )}
+        {!canSend && (joe.busy || joe.voicePending) ? <Button className={roundButton} aria-label="停止回答" onClick={joe.stop}><Icon name="stop" /></Button>
+          : <Button className={`${roundButton} bg-white/25`} aria-label="发送消息" disabled={!canSend} onClick={() => void submit()}><Icon name="send" /></Button>}
       </div>
-      {joe.uploading && (
-        <p className="mt-2 text-xs text-slate-400" role="status">
-          上传中…
-        </p>
-      )}
+      {joe.uploading && <p className="mt-2 px-3 text-xs text-white/80" role="status">上传中…</p>}
     </div>
   );
 }

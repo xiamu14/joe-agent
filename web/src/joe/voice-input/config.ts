@@ -1,2 +1,1 @@
-export const VOICE_INPUT_IDLE_TIMEOUT_MS = 30_000;
 export const VOICE_ACTIVITY_RMS = 0.018;

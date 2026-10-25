@@ -22,8 +22,9 @@ export type VoiceAccount = {
   nextInvoice?: number | null;
   currency?: string | null;
   balance?: string;
+  remainingCredits?: number;
 };
-const cache = new Map<string, { token: string; until: number; result: Promise<VoiceAccount> }>();
+const cache = new Map<string, { token: string; rate?: string; until: number; result: Promise<VoiceAccount> }>();
 export async function voiceAccounts() {
   const configs = [voiceConfig('asr'), voiceConfig('tts')];
   return {
@@ -31,16 +32,17 @@ export async function voiceAccounts() {
     accounts: await Promise.all(
       [...new Map(configs.map((config) => [config.id, config])).values()].map((config) => {
         const existing = cache.get(config.id);
-        if (existing && existing.token === config.token && existing.until > Date.now())
+        const rate = config.id === 'elevenlabs' ? process.env.ELEVENLABS_USD_PER_1000_CREDITS : undefined;
+        if (existing && existing.token === config.token && existing.rate === rate && existing.until > Date.now())
           return existing.result;
-        const result = query(config.id, config.label, config.token);
-        cache.set(config.id, { token: config.token, until: Date.now() + VOICE_ACCOUNT_POLL_MS, result });
+        const result = query(config.id, config.label, config.token, rate);
+        cache.set(config.id, { token: config.token, rate, until: Date.now() + VOICE_ACCOUNT_POLL_MS, result });
         return result;
       }),
     ),
   };
 }
-async function query(id: string, provider: string, token: string): Promise<VoiceAccount> {
+async function query(id: string, provider: string, token: string, rate?: string): Promise<VoiceAccount> {
   if (!token) return { provider, error: '未配置 API 凭据' };
   try {
     const response = await fetch(
@@ -63,6 +65,17 @@ async function query(id: string, provider: string, token: string): Promise<Voice
     const data = await response.json();
     if (id === 'elevenlabs') {
       const value = subscription.parse(data);
+      const remainingCredits =
+        value.tier === 'payg' ? Math.max(0, value.character_limit - value.character_count) : undefined;
+      let balance: string | undefined;
+      if (remainingCredits !== undefined && rate?.trim()) {
+        const price = z.coerce.number().finite().positive().safeParse(rate);
+        if (!price.success) return { provider, error: 'credits 美元换算费率必须是正数' };
+        // shortcut: quota credits are a USD equivalent, use a wallet API when one is available.
+        const dollars = (remainingCredits * price.data) / 1000;
+        if (!Number.isFinite(dollars)) return { provider, error: 'credits 美元换算金额超出范围' };
+        balance = String(dollars);
+      }
       return {
         provider,
         updatedAt: Date.now(),
@@ -74,12 +87,17 @@ async function query(id: string, provider: string, token: string): Promise<Voice
         nextInvoice:
           value.next_invoice?.amount_due_cents == null ? null : value.next_invoice.amount_due_cents / 100,
         currency: value.currency ?? null,
+        remainingCredits,
+        balance,
       };
     }
     return {
       provider,
       updatedAt: Date.now(),
-      balance: z.object({ credit: z.string().regex(/^\d+(?:\.\d+)?$/) }).parse(data).credit,
+      balance: z.object({
+        credit: z.string().regex(/^\d+(?:\.\d+)?$/).refine((value) => Number.isFinite(Number(value))),
+      }).parse(data).credit,
+      currency: 'usd',
     };
   } catch {
     return { provider, error: '账户查询暂不可用，稍后自动重试' };

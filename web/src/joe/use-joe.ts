@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMotionValue } from 'motion/react';
 import { api, jsonBody } from './api';
 import { readEvents, extractSentence } from './stream';
 import { VoiceQueue } from './voice-queue';
@@ -22,8 +23,8 @@ export function useJoe() {
     emotion: 'calm',
     intensity: 0.35,
   });
-  const [level, setLevel] = useState(0),
-    [playing, setPlaying] = useState(false),
+  const level = useMotionValue(0);
+  const [playing, setPlaying] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]),
@@ -38,6 +39,7 @@ export function useJoe() {
   const cancellation = useRef<Promise<unknown> | undefined>(undefined);
   const turnVoice = useRef(false);
   const [voicePending, setVoicePending] = useState(false);
+  const [cardRequest, setCardRequest] = useState<{ card: NonNullable<AgentEvent['card']>; turnId: string } | null>(null);
   const uploadAbort = useRef<AbortController | null>(null),
     generation = useRef(0);
   const refreshUsage = useCallback(async () => {
@@ -78,7 +80,7 @@ export function useJoe() {
         if (mounted.current) setPlaying(value);
       },
       (value) => {
-        if (mounted.current) setLevel(value);
+        if (mounted.current) level.set(value);
       },
       (message) => {
         if (mounted.current) {
@@ -89,16 +91,6 @@ export function useJoe() {
       },
       (value) => {
         if (mounted.current) setVoicePending(value);
-      },
-      (turnId, end) => {
-        if (mounted.current && turn.current === turnId)
-          setMessages((old) =>
-            old.map((m) =>
-              m.turnId === turnId && m.role === 'assistant'
-                ? { ...m, visibleText: (m.speechText || '').slice(0, end) }
-                : m,
-            ),
-          );
       },
     );
     void connect(controller.signal);
@@ -112,7 +104,7 @@ export function useJoe() {
       voice.current?.dispose();
       clearInterval(poll);
     };
-  }, [connect, refreshUsage]);
+  }, [connect, refreshUsage, level]);
   function stop() {
     const old = turn.current;
     turn.current = '';
@@ -130,7 +122,7 @@ export function useJoe() {
     );
     if (old) cancellation.current = api('/cancel', jsonBody({ sessionId, turnId: old })).catch(() => {});
   }
-  async function saveSettings(settings: Settings) {
+  const saveSettings = useCallback(async (settings: Settings) => {
     if (saving) return;
     setSaving(true);
     setError('');
@@ -158,15 +150,15 @@ export function useJoe() {
     } finally {
       setSaving(false);
     }
-  }
+  }, [saving]);
   async function send(text: string, spoken = false) {
-    if ((!spoken && busy) || uploading || !sessionId || (!text.trim() && !attachments.length)) return false;
+    if (uploading || !sessionId || (!text.trim() && !attachments.length)) return false;
     const model = settingsRef.current?.model || bootstrap?.models[0]?.id;
     if (!bootstrap?.configured.llm || !model) {
       setError('请配置 OpenRouter API_TOKEN 和模型列表后开始对话');
       return false;
     }
-    if (spoken && (busy || voice.current?.pending)) stop();
+    if (busy || voice.current?.pending) stop();
     voice.current?.stop();
     voice.current?.unlock();
     const id = crypto.randomUUID();
@@ -185,6 +177,7 @@ export function useJoe() {
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
+      if (event.type === 'card.open' && event.card) setCardRequest({ card: event.card, turnId: id });
       if (event.type === 'messages' && event.user && event.assistant) {
         assistantId = event.assistant.id;
         accepted = true;
@@ -358,6 +351,7 @@ export function useJoe() {
     busy,
     playing,
     voicePending,
+    cardRequest,
     error,
     attachments,
     uploading,

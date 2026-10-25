@@ -1,70 +1,29 @@
-import { useLayoutEffect, useRef } from 'react';
+import { memo, useLayoutEffect, useRef } from 'react';
 import type { Message } from '../../joe/types';
-export function MessageList({ messages }: { messages: Message[] }) {
+import { MessageBody } from './message-body';
+export const MessageList = memo(function MessageList({ messages }: { messages: Message[] }) {
   const list = useRef<HTMLDivElement>(null);
+  const following = useRef(true);
   useLayoutEffect(() => {
-    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+    if (list.current && following.current) list.current.scrollTop = list.current.scrollHeight;
   }, [messages]);
   return (
-    <div
-      ref={list}
-      className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 scrollbar-none"
-      role="log"
-      aria-label="当前会话"
-      aria-live="off"
-    >
-      {!messages.length && (
-        <div className="m-auto py-8 text-center text-sm text-slate-400">
-          <p className="text-slate-200">你好，我是 Joe。</p>
-        </div>
-      )}
-      {messages.map((message) => (
-        <article
-          key={message.id}
-          className={`flex max-w-[88%] shrink-0 flex-col ${message.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}
-        >
-          <div className="mb-1.5 flex gap-2 font-mono text-[10px] text-slate-500">
-            <span>{message.role === 'user' ? 'YOU' : 'JOE'}</span>
-          </div>
-          <div
-            className={`whitespace-pre-wrap break-words rounded-2xl border px-4 py-3 text-sm leading-relaxed text-slate-200 [overflow-wrap:anywhere] ${message.role === 'user' ? 'rounded-tr-sm border-blue-300/10 bg-[#172442]' : 'rounded-tl-sm border-white/5 bg-[#151a29]'}`}
-          >
-            {message.text || (message.status === 'streaming' ? '正在思考…' : '未返回正文')}
-            {message.speechText && (
-              <div className="mt-3 border-t border-white/10 pt-2 text-sky-200" lang={message.speechLanguage}>
-                {message.visibleText === undefined ? message.speechText : message.visibleText || '准备播报…'}
-              </div>
-            )}
-            {message.attachments.map((file) => (
-              <div className="mt-2 text-xs text-sky-200" key={file.id}>
-                ↗ {file.name}
-              </div>
-            ))}
-          </div>
-          {message.sources?.length ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {message.sources
-                .filter((s) => /^https?:\/\//.test(s.url))
-                .map((source, i) => (
-                  <a
-                    key={`${source.url}-${i}`}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-sky-300 underline"
-                  >
-                    {source.title}
-                  </a>
-                ))}
-            </div>
-          ) : null}
-          {['interrupted', 'error'].includes(message.status) && (
-            <span className="mt-1 text-xs text-amber-300">
-              {message.status === 'interrupted' ? '已中断 · 内容可能不完整' : '回答失败 · 可重新发送'}
-            </span>
-          )}
-        </article>
-      ))}
+    <div ref={list} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 pb-5 [scrollbar-width:thin] [scrollbar-color:#ffffff30_transparent]"
+      role="log" aria-label="当前会话" aria-live="off"
+      onScroll={event => { const element = event.currentTarget; following.current = element.scrollHeight - element.clientHeight - element.scrollTop < 64; }}>
+      {!messages.length && <div className="m-auto py-6 text-center text-base font-semibold text-white/90">你好，我是 Joe。</div>}
+      {messages.map(message => <MessageRow key={message.id} message={message} />)}
     </div>
   );
-}
+});
+
+const MessageRow = memo(function MessageRow({ message }: { message: Message }) {
+  return (<article aria-label={message.role === 'user' ? '你的消息' : 'Joe 的回答'}
+        className={`flex max-w-[92%] shrink-0 flex-col ${message.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}>
+        <div className={`max-w-full rounded-[24px] px-4 py-3 ${message.role === 'user' ? 'bg-white/10' : 'bg-white/5'}`}><MessageBody message={message} /></div>
+        {message.sources?.length ? <div className="mt-2 flex flex-wrap gap-2">
+          {message.sources.filter(source => /^https?:\/\//.test(source.url)).map((source, i) => <a key={`${source.url}-${i}`} href={source.url} target="_blank" rel="noopener noreferrer" className="rounded-lg text-xs text-white/80 underline underline-offset-4">{source.title}</a>)}
+        </div> : null}
+        {['interrupted', 'error'].includes(message.status) && <span className="mt-1 text-xs text-white/80">{message.status === 'interrupted' ? '已中断' : '回答失败，请重试'}</span>}
+      </article>);
+});
