@@ -1,3 +1,4 @@
+import { contentSurface } from '../workspace/material';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../../joe/api';
 import type { Bootstrap, Weather } from '../../joe/types';
@@ -44,7 +45,7 @@ export const InfoPanel = memo(function InfoPanel({ bootstrap }: { bootstrap: Boo
           {(now === null ? null : new Date(now))?.toLocaleTimeString('zh-CN', { timeZone: timezone, hour: '2-digit', minute: '2-digit' }) ||
             '—:—'}
         </p>
-        <p className="mt-3 text-sm text-white/80">
+        <p className="mt-3 text-sm text-white/90">
           {(now === null ? null : new Date(now))?.toLocaleDateString('zh-CN', {
             timeZone: timezone,
             year: 'numeric',
@@ -63,18 +64,18 @@ export const InfoPanel = memo(function InfoPanel({ bootstrap }: { bootstrap: Boo
                 ? '请配置 WeatherAPI'
                 : '正在定位天气'}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-white/80">⌖ {weather?.place || 'IP 自动定位'}</p>
-        {error && <p className="mt-2 text-xs text-white/80">{error}</p>}
+        <p className="mt-2 text-sm leading-relaxed text-white/90">⌖ {weather?.place || 'IP 自动定位'}</p>
+        {error && <p className="mt-2 text-xs text-white/90">{error}</p>}
         <a
-          className="mt-4 block text-[10px] text-white/80"
+          className="mt-4 block text-[10px] text-white/90"
           href="https://www.weatherapi.com/"
           target="_blank"
           rel="noreferrer"
         >
           WeatherAPI.com
         </a>
-        <div className="mt-8 flex items-center justify-between gap-3 rounded-3xl bg-white/5 p-5 text-sm">
-          <span className="text-white/80">累计在线</span>
+        <div className={`mt-8 flex items-center justify-between gap-3 p-4 text-sm ${contentSurface}`}>
+          <span className="text-white/90">累计在线</span>
           <span className="text-white tabular-nums">{usage ? duration(usage.uptimeMs) : '—'}</span>
         </div>
       </section>

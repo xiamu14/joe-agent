@@ -4,7 +4,7 @@ import { backgrounds } from './background';
 
 export function CardPreview({ card, bootstrap, messages, time }: { card: CardId; bootstrap: Bootstrap | null; messages: Message[]; time: string }) {
   const bars = <><span className="h-1.5 w-3/4 rounded-full bg-white/40" /><span className="h-1.5 w-1/2 rounded-full bg-white/20" /></>;
-  return <div className="pointer-events-none mb-3 flex h-28 w-full flex-col justify-center gap-3 overflow-hidden rounded-2xl bg-black/10 p-4" aria-hidden="true">
+  return <div className="pointer-events-none flex min-h-0 w-full flex-1 flex-col justify-center gap-3 overflow-hidden p-4 sm:p-6" aria-hidden="true">
     {card === 'conversation' && <>
       <span className="mx-auto size-9 shrink-0 rounded-full bg-[radial-gradient(circle_at_35%_30%,#c4edff,#7bb6e6_40%,#6c80bb_70%,transparent)] shadow-[0_0_18px_#b4dfff55]" />
       <span className="line-clamp-2 text-[9px] leading-4 text-white/80">{messages.at(-1)?.speechText || messages.at(-1)?.text || '你好，我是 Joe。'}</span>

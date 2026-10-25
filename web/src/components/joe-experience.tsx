@@ -101,7 +101,7 @@ export function JoeExperience() {
           <div className="mt-6 mb-8 flex items-center justify-center gap-2.5">
             <Button
               id="demo"
-              className="flex items-center gap-[13px] rounded-full border border-[#8498d84d] px-5 py-[13px] text-xs tracking-[1px] text-[#dce5ff] shadow-[0_0_25px_#537be810,inset_0_1px_#e0eaff09] hover:border-[#a2b6ef80] bg-[linear-gradient(110deg,#27325399,#172039aa)] hover:bg-[#2b3c65]"
+              className="flex items-center gap-[13px] rounded-full border border-[#8498d84d] px-5 py-[13px] text-xs tracking-[1px] text-[#dce5ff] shadow-[0_0_25px_#537be810] hover:border-[#a2b6ef80] bg-[linear-gradient(110deg,#27325399,#172039aa)] hover:bg-[#2b3c65]"
               aria-pressed={demo}
               onClick={() => (demo ? select('idle', 'calm') : setDemo(true))}
             >

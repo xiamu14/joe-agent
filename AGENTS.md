@@ -20,6 +20,7 @@ Must use Tailwind css, don't use css file.
 
 ## Style Rules
 Don't use multiple borders.
+Never use inset shadows (including inset highlights).
 Use a compact layout.
 
 ## Animation Rules

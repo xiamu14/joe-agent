@@ -1,3 +1,4 @@
+import { contentSurface } from '../workspace/material';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@base-ui/react/button';
 import { AnimatePresence, motion } from 'motion/react';
@@ -36,11 +37,11 @@ export function MessageBody({ message }: { message: Message }) {
     <div className="whitespace-pre-wrap break-words text-[15px] font-semibold leading-[1.75] [overflow-wrap:anywhere]">
       {main || (message.status === 'streaming' ? '正在思考…' : '未返回正文')}
     </div>
-    {message.attachments.map(file => <div className="mt-2 text-xs text-white/80" key={file.id}>↗ {file.name}</div>)}
-    {message.status === 'complete' && main && <Button className="mt-2 rounded-lg py-1 text-[11px] font-semibold text-white/80 hover:text-white" aria-expanded={expanded} onClick={() => void toggleTranslation()}>{expanded ? '收起译文' : '查看译文'}</Button>}
+    {message.attachments.map(file => <div className="mt-2 text-xs text-white/90" key={file.id}>↗ {file.name}</div>)}
+    {message.status === 'complete' && main && <Button className="mt-2 rounded-lg py-1 text-[11px] font-semibold text-white/90 hover:text-white" aria-expanded={expanded} onClick={() => void toggleTranslation()}>{expanded ? '收起译文' : '查看译文'}</Button>}
     <AnimatePresence initial={false}>
       {expanded && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-        <div className="mt-2 whitespace-pre-wrap break-words rounded-2xl bg-white/5 p-3 text-sm leading-7 text-white/85" role={error ? 'alert' : 'status'}>
+        <div className={`mt-2 whitespace-pre-wrap break-words p-3 text-sm leading-7 text-white/85 ${contentSurface}`} role={error ? 'alert' : 'status'}>
           {loading ? '翻译中…' : error || original || (translation.trim() === main.trim() ? '无需翻译' : translation)}
         </div>
       </motion.div>}

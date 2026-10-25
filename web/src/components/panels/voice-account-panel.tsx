@@ -1,3 +1,4 @@
+import { contentSurface } from '../workspace/material';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../../joe/api';
 import type { Cost, Usage, VoiceAccount } from '../../joe/types';
@@ -40,24 +41,24 @@ export const VoiceAccountPanel = memo(function VoiceAccountPanel({ usage }: { us
     };
   }, []);
   return (
-    <section className="p-7" aria-label="费用">
+    <section className="p-5" aria-label="费用">
 
       <dl className="mb-8 grid grid-cols-2 gap-4">
         <div>
-          <dt className="text-xs text-white/80">今日费用</dt>
-          <dd className="mt-3 text-2xl font-semibold tabular-nums text-white">{money(usage?.model)}</dd>
+          <dt className="text-xs text-white/90">今日费用</dt>
+          <dd className="mt-3 text-xl font-semibold tabular-nums text-white">{money(usage?.model)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-white/80">总费用</dt>
-          <dd className="mt-3 text-2xl font-semibold tabular-nums text-white">{money(usage?.modelLifetime)}</dd>
+          <dt className="text-xs text-white/90">总费用</dt>
+          <dd className="mt-3 text-xl font-semibold tabular-nums text-white">{money(usage?.modelLifetime)}</dd>
         </div>
       </dl>
-      <p className="text-xs text-white/80">模型 · USD · 含估算</p>
-      <div className="mt-7 space-y-6 rounded-3xl bg-white/5 p-5">
-        {!accounts.length && <p className="text-sm text-white/80">{error || '语音账单查询中…'}</p>}
+      <p className="text-xs text-white/90">模型 · USD · 含估算</p>
+      <div className={`mt-7 overflow-hidden divide-y divide-white/20 ${contentSurface}`}>
+        {!accounts.length && <p className="px-4 py-3 text-sm text-white/90">{error || '语音账单查询中…'}</p>}
         {accounts.map((account) => (
-          <div key={account.provider} className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="text-white/80">
+          <div key={account.provider} className="flex items-baseline justify-between gap-3 px-4 py-3 text-sm">
+            <span className="text-white/90">
               {account.provider}
               <span className="mt-1 block text-[11px]">
                 {account.balance !== undefined || account.remainingCredits !== undefined
@@ -85,7 +86,7 @@ export const VoiceAccountPanel = memo(function VoiceAccountPanel({ usage }: { us
             )}
           </div>
         ))}
-        <p className="text-[11px] text-white/80">语音为账户账单，含其他应用用量</p>
+        <p className="px-4 py-3 text-[11px] text-white/90">语音为账户账单，含其他应用用量</p>
       </div>
     </section>
   );

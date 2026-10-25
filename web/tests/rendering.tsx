@@ -22,6 +22,10 @@ function Fixture() {
   async function check() {
     const output = document.getElementById('result')!;
     try {
+      const mainCard = document.querySelector('[aria-label$="主卡片"]')!.getBoundingClientRect();
+      const sideCard = document.querySelector('[aria-label$="次卡片"]')!.getBoundingClientRect();
+      if (Math.abs(sideCard.height - mainCard.height * 0.9) > 1) throw new Error('次卡高度应为主卡的 90%');
+      if (Math.abs(mainCard.width / sideCard.width - 1.618) > 0.02) throw new Error('主次卡宽度应接近黄金比例');
       if (!primary) throw new Error('请先将对话切换为主卡');
       const card = document.querySelector('[aria-label="费用次卡片"]')!;
       const log = document.querySelector('[role="log"]')!;
@@ -49,14 +53,14 @@ function Fixture() {
       <span>更新 {tick}</span>
       <output id="commits">0</output>
     </div>
-    <main className="absolute inset-x-0 bottom-[112px] top-5 [perspective:1400px]">
+    <main className="absolute inset-x-0 bottom-[112px] top-5">
       <CardFrame title="对话" primary={primary} visible blocked={false} onPromote={() => setPrimary(true)} onSwap={() => setPrimary(p => !p)}>
         <div className="h-[150px] w-[200px] shrink-0"><ThoughtOrb visual={visual} level={level} compact /></div>
         <Profiler id="history" onRender={() => { document.querySelector('#commits')!.textContent = String(++commits); }}>
           <MessageList messages={messages} />
         </Profiler>
       </CardFrame>
-      <CardFrame title="费用" primary={!primary} visible blocked={false} compact onPromote={() => setPrimary(false)} onSwap={() => setPrimary(p => !p)}>
+      <CardFrame title="费用" primary={!primary} visible blocked={false} onPromote={() => setPrimary(false)} onSwap={() => setPrimary(p => !p)}>
         <p>次卡位置应保持稳定</p>
       </CardFrame>
     </main>

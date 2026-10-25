@@ -9,7 +9,8 @@ import { SettingsPanel } from '../components/panels/settings-panel';
 import { VoiceAccountPanel } from '../components/panels/voice-account-panel';
 import { Background, BackgroundPicker, backgrounds, type BackgroundId } from '../components/workspace/background';
 import { CardFrame } from '../components/workspace/card-frame';
-import { CardOverview, VoicePermission } from '../components/workspace/overlays';
+import { VoicePermission } from '../components/workspace/overlays';
+import { CardOverview } from '../components/workspace/card-overview';
 import { Dock } from '../components/workspace/dock';
 import { Icon } from '../components/workspace/icon';
 import { roundButton } from '../components/workspace/material';
@@ -24,9 +25,9 @@ export function JoePage() {
   const voice = useVoiceInput(joe);
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [overview, setOverview] = useState(false);
-  const [background, setBackground] = useState<BackgroundId>('sky');
+  const [background, setBackground] = useState<BackgroundId>('neutral');
   useEffect(() => {
-    const saved = localStorage.getItem('joe.background');
+    const saved = localStorage.getItem('joe.background.v2');
     if (saved && Object.hasOwn(backgrounds, saved)) setBackground(saved as BackgroundId);
   }, []);
   useEffect(() => {
@@ -44,10 +45,10 @@ export function JoePage() {
     <MotionConfig reducedMotion="user">
       <div className="relative h-dvh overflow-hidden font-semibold text-white [color-scheme:light]" style={{ '--accent': visual.color } as CSSProperties}>
         <Background selected={background} />
-        <main className="absolute inset-x-0 bottom-[112px] top-5 [perspective:1400px]" aria-label="交互空间">
-          <CardFrame title="对话" primary={conversationPrimary} visible={workspace.conversation} blocked={blocked} onPromote={() => open('conversation')} onSwap={swap}
+        <main className="absolute inset-x-0 bottom-[112px] top-5" aria-label="交互空间">
+          <CardFrame title="对话" primary={conversationPrimary} visible={!overview && workspace.conversation} blocked={blocked} onPromote={() => open('conversation')} onSwap={swap}
             actions={<Button className={roundButton} aria-label="新对话" disabled={!joe.sessionId || joe.uploading} onClick={() => void joe.newSession()}><Icon name="plus" /></Button>}>
-            <div className="relative mx-auto -mt-4 h-[150px] w-[200px] shrink-0 max-sm:h-[115px] [@media(max-height:500px)]:hidden" aria-label={voice.status}>
+            <div className="relative mx-auto -mt-4 h-[125px] w-[170px] shrink-0 max-sm:h-[115px] [@media(max-height:500px)]:hidden" aria-label={voice.status}>
               <ThoughtOrb level={joe.level} visual={visual} compact active={conversationPrimary && !blocked} />
             </div>
             {!joe.bootstrap?.configured.llm && <div className="mx-6 mb-3 flex items-center justify-between gap-3 rounded-2xl bg-black/10 p-3 text-xs text-white/80" role="status">
@@ -60,20 +61,20 @@ export function JoePage() {
             </div>}
             <Composer key={`composer-${joe.sessionId}`} joe={joe} voice={voice} />
           </CardFrame>
-          <CardFrame title={cardNames[workspace.ordinary || 'costs']} primary={!conversationPrimary} visible={Boolean(workspace.ordinary)} blocked={blocked} compact={workspace.ordinary === 'costs' || workspace.ordinary === 'background'}
+          <CardFrame title={cardNames[workspace.ordinary || 'costs']} primary={!conversationPrimary} visible={!overview && Boolean(workspace.ordinary)} blocked={blocked}
             onPromote={() => workspace.ordinary && open(workspace.ordinary)} onSwap={swap}
             onClose={() => workspace.ordinary && setWorkspace(current => closeCard(current, workspace.ordinary!))}>
             <div className="min-h-0 flex-1">
               <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><VoiceAccountPanel usage={joe.bootstrap?.usage} /></div>
               <div hidden={workspace.ordinary !== 'time'} className={panelBody}><InfoPanel bootstrap={joe.bootstrap} /></div>
               <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
-              <div hidden={workspace.ordinary !== 'background'} className={panelBody}><BackgroundPicker selected={background} onSelect={id => { setBackground(id); localStorage.setItem('joe.background', id); }} /></div>
+              <div hidden={workspace.ordinary !== 'background'} className={panelBody}><BackgroundPicker selected={background} onSelect={id => { setBackground(id); localStorage.setItem('joe.background.v2', id); }} /></div>
             </div>
           </CardFrame>
+          <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} />
         </main>
         <Dock level={joe.level} timezone={joe.bootstrap?.settings.timezone || 'Asia/Shanghai'} visual={visual} active={!conversationPrimary && !voice.asking} status={voice.status}
           overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onBackground={() => open('background')} onConversation={() => open('conversation')} />
-        <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} />
         <VoicePermission open={voice.asking} ready={voice.ready} onEnable={voice.enable} onSkip={voice.skip} />
       </div>
     </MotionConfig>

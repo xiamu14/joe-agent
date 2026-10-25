@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { contentSurface, glass, switchTrack, switchThumb } from '../workspace/material';
 import { Switch } from '@base-ui/react/switch';
 import { Select } from '@base-ui/react/select';
 import type { useJoe } from '../../joe/use-joe';
@@ -24,9 +25,9 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
           checked={settings?.voice ?? true}
           disabled={!settings || saving}
           onCheckedChange={(voice) => settings && void saveSettings({ ...settings, voice })}
-          className="h-6 w-10 rounded-full bg-white/10 p-0.5 data-checked:bg-white/40"
+          className={switchTrack}
         >
-          <Switch.Thumb className="block size-5 rounded-full bg-slate-200 transition-transform data-checked:translate-x-4" />
+          <Switch.Thumb className={switchThumb} />
         </Switch.Root>
       </div>
       <div className="mt-6 flex items-center justify-between">
@@ -34,11 +35,11 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         <Switch.Root id="default-muted" checked={settings?.defaultMuted ?? false}
           disabled={!settings || saving}
           onCheckedChange={defaultMuted => settings && void saveSettings({ ...settings, defaultMuted })}
-          className="h-6 w-10 rounded-full bg-white/10 p-0.5 data-checked:bg-white/40">
-          <Switch.Thumb className="block size-5 rounded-full bg-white transition-transform data-checked:translate-x-4" />
+          className={switchTrack}>
+          <Switch.Thumb className={switchThumb} />
         </Switch.Root>
       </div>
-      <label id="voice-language-label" className="mt-6 mb-2 block text-xs text-white/80">
+      <label id="voice-language-label" className="mt-6 mb-2 block text-xs text-white/90">
         语音配置
       </label>
       <Select.Root
@@ -51,7 +52,7 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         }}
       >
         <Select.Trigger
-          className="flex w-full items-center justify-between gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-xs text-white outline-none disabled:opacity-40"
+          className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-xs text-white outline-none disabled:opacity-40 ${contentSurface}`}
           aria-labelledby="voice-language-label"
         >
           <Select.Value />
@@ -59,7 +60,7 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         </Select.Trigger>
         <Select.Portal>
           <Select.Positioner sideOffset={8} className="z-90">
-            <Select.Popup className="rounded-2xl bg-slate-900/95 backdrop-blur-[40px] p-1 shadow-xl">
+            <Select.Popup className={`rounded-2xl p-1 ${glass}`}>
               {voiceChoices.map((choice) => (
                 <Select.Item
                   key={choice.value}
@@ -74,11 +75,11 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
           </Select.Positioner>
         </Select.Portal>
       </Select.Root>
-      <p className="mt-2 text-[10px] text-white/80 hidden">
+      <p className="mt-2 text-[10px] text-white/90 hidden">
         English 音色{bootstrap?.configured.voiceProfiles?.en ? '已配置' : '未配置'} · Chinese 音色
         {bootstrap?.configured.voiceProfiles?.zh ? '已配置' : '未配置'}
       </p>
-      <label id="model-label" className="mt-7 mb-2 block text-xs text-white/80">
+      <label id="model-label" className="mt-7 mb-2 block text-xs text-white/90">
         思考模型
       </label>
       <Select.Root
@@ -90,7 +91,7 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         disabled={!bootstrap?.models.length || saving}
       >
         <Select.Trigger
-          className="flex w-full items-center justify-between gap-2 rounded-2xl bg-white/5 px-3 py-2.5 text-xs text-white outline-none disabled:opacity-40"
+          className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-xs text-white outline-none disabled:opacity-40 ${contentSurface}`}
           aria-labelledby="model-label"
         >
           <Select.Value placeholder="等待配置模型列表" />
@@ -98,7 +99,7 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         </Select.Trigger>
         <Select.Portal>
           <Select.Positioner sideOffset={8} className="z-90">
-            <Select.Popup className="max-h-64 min-w-56 overflow-auto rounded-2xl bg-slate-900/95 backdrop-blur-[40px] p-1 shadow-xl">
+            <Select.Popup className={`max-h-64 min-w-56 overflow-auto rounded-2xl p-1 ${glass}`}>
               {bootstrap?.models.map((m) => (
                 <Select.Item
                   className="cursor-pointer rounded-lg px-3 py-2 text-sm text-white data-highlighted:bg-white/10"
@@ -114,8 +115,8 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
         </Select.Portal>
       </Select.Root>
       <div className="my-6 h-px bg-white/15" />
-      <p className="text-xs text-white/80">连接状态</p>
-      <ul className="mt-3 space-y-2 text-[11px] text-white/80">
+      <p className="text-xs text-white/90">连接状态</p>
+      <ul className="mt-3 space-y-2 text-[11px] text-white/90">
         {[
           ['OpenRouter', bootstrap?.configured.llm],
           [`${bootstrap?.configured.voiceProviders?.asr || '语音'} 输入`, bootstrap?.configured.asr],

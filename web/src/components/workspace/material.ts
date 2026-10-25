@@ -1,3 +1,9 @@
-export const glass = 'bg-[linear-gradient(135deg,rgba(20,37,64,0.84),rgba(25,51,78,0.80))] backdrop-blur-[24px] backdrop-saturate-150 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_16px_48px_-24px_rgba(15,35,65,0.4)]';
-export const roundButton = 'flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-35';
-export const pillButton = 'rounded-full bg-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-35';
+// Figma 417:14586 (window), 11:2654 (icon), 10:2484 (button), 10:1498 (input).
+export const glass = 'bg-white/10 backdrop-blur-[50px] shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
+export const roundButton = 'flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 backdrop-blur-[50px] text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-35';
+export const pillButton = 'min-h-10 rounded-full bg-white/10 backdrop-blur-[50px] px-4 py-2 text-base leading-[22px] tracking-[-0.4px] font-semibold text-white shadow-[0_8px_16px_rgba(0,0,0,0.05)] hover:bg-white/20 disabled:opacity-35';
+export const inputSurface = 'bg-black/20 backdrop-blur-[71.562px]';
+export const switchTrack = 'h-8 w-[54px] shrink-0 rounded-full bg-black/20 p-1 backdrop-blur-[71.562px] data-checked:bg-[#2fd350] disabled:opacity-35';
+export const switchThumb = 'block size-6 rounded-full bg-white shadow-[0_3px_8px_rgba(0,0,0,0.15),0_3px_1px_rgba(0,0,0,0.06)] transition-transform data-checked:translate-x-[22px]';
+// Frame 70, 11:2475: grouped content surface, without inset shadows.
+export const contentSurface = 'rounded-2xl bg-black/20 backdrop-blur-[50px]';
