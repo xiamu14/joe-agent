@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@base-ui/react/button';
-import { motion } from 'motion/react';
+import { motion, type MotionValue } from 'motion/react';
+import type { agentVisual } from '../../joe/visual';
 import { cardNames, type CardId } from '../../joe/workspace-state';
 import type { Bootstrap, Message } from '../../joe/types';
 import { CardPreview } from './card-preview';
@@ -10,9 +11,10 @@ import { glass, roundButton } from './material';
 type Props = {
   open: boolean; onClose: () => void; onSelect: (card: CardId) => void;
   bootstrap: Bootstrap | null; messages: Message[];
+  visual: ReturnType<typeof agentVisual>; level: MotionValue<number>;
 };
 
-export function CardOverview({ open, onClose, onSelect, bootstrap, messages }: Props) {
+export function CardOverview({ open, onClose, onSelect, bootstrap, messages, visual, level }: Props) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const [time, setTime] = useState('—:—');
   useEffect(() => {
@@ -46,7 +48,7 @@ export function CardOverview({ open, onClose, onSelect, bootstrap, messages }: P
             render={<motion.button initial={false} animate={{ rotateY: index % 3 === 0 ? 12 : index % 3 === 2 ? -12 : 0, scale: 1, y: 0 }} whileHover={{ scale: 1.025, y: -3 }} whileTap={{ scale: 0.98 }} />}
             className={`flex aspect-[1.14] min-w-0 flex-col overflow-hidden rounded-[20px] text-left text-white outline-offset-4 focus-visible:outline-2 focus-visible:outline-white max-sm:aspect-[0.75] max-sm:rounded-xl ${glass}`}>
             <span className="shrink-0 px-4 pt-4 text-sm font-semibold max-sm:px-2 max-sm:pt-3 max-sm:text-xs">{cardNames[card]}</span>
-            <CardPreview card={card} bootstrap={bootstrap} messages={messages} time={time} />
+            <CardPreview card={card} bootstrap={bootstrap} messages={messages} time={time} visual={visual} level={level} />
           </Button>
         ))}
       </motion.div>

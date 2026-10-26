@@ -41,10 +41,10 @@ export function JoePage() {
     <MotionConfig reducedMotion="user">
       <div className="relative h-dvh overflow-hidden font-semibold text-white [color-scheme:light]" style={{ '--accent': visual.color } as CSSProperties}>
         <Background />
-        <main className="absolute inset-x-0 bottom-[112px] top-5" aria-label="交互空间">
+        <main className="absolute inset-x-0 bottom-[max(152px,calc(138px+env(safe-area-inset-bottom)))] top-5" aria-label="交互空间">
           <CardFrame title="对话" primary={conversationPrimary} visible={!overview && workspace.conversation} blocked={blocked} onPromote={() => open('conversation')} onSwap={swap}
             actions={<Button className={roundButton} aria-label="新对话" disabled={!joe.sessionId || joe.uploading} onClick={() => void joe.newSession()}><Icon name="plus" /></Button>}>
-            <div className="relative mx-auto -mt-4 h-[125px] w-[170px] shrink-0 max-sm:h-[115px] [@media(max-height:500px)]:hidden" aria-label={voice.status}>
+            <div className="relative mx-auto -mt-4 h-[125px] w-[170px] shrink-0 scale-75 max-sm:h-[115px] [@media(max-height:500px)]:hidden" aria-label={voice.status}>
               <ThoughtOrb level={joe.level} visual={visual} compact active={conversationPrimary && !blocked} />
             </div>
             {!joe.bootstrap?.configured.llm && <div className="mx-6 mb-3 flex items-center justify-between gap-3 rounded-2xl bg-black/10 p-3 text-xs text-white/80" role="status">
@@ -66,7 +66,7 @@ export function JoePage() {
               <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
             </div>
           </CardFrame>
-          <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} />
+          <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} visual={visual} level={joe.level} />
         </main>
         <Dock level={joe.level} timezone={joe.bootstrap?.settings.timezone || 'Asia/Shanghai'} visual={visual} active={!conversationPrimary && !voice.asking} status={voice.status}
           overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onConversation={() => open('conversation')} />

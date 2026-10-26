@@ -4,7 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { glass, roundButton } from './material';
 import { Icon } from './icon';
 
-const secondaryWidth = 344;
+const secondaryWidth = 430;
 const perspective = 1400;
 // Compensate the near edge's perspective enlargement to keep visible height at 90%.
 const secondaryHeightScale = 0.9 * (1 - secondaryWidth * Math.sin(16 * Math.PI / 180) / (2 * perspective));
@@ -21,9 +21,9 @@ export function CardFrame({ title, primary, visible, blocked, onPromote, onSwap,
     <motion.section aria-label={`${title}${primary ? '主卡片' : '次卡片'}`}
       aria-hidden={!visible || blocked} hidden={!visible} data-visible={visible}
       initial={false}
-      animate={{ left: primary ? '50%' : 'calc(50% + 270px)', width: primary ? 'min(480px, calc(100vw - 32px))' : `${secondaryWidth}px`, height: 'min(500px, calc(100dvh - 150px))', x: primary ? '-50%' : '0%', top: 'calc(50% - min(250px, calc((100dvh - 150px) / 2)))', rotateY: primary ? 0 : -16, transformPerspective: perspective, scaleX: primary ? 1 : 0.9, scaleY: primary ? 1 : secondaryHeightScale, opacity: visible ? 1 : 0 }}
+      animate={{ left: primary ? '50%' : 'calc(50% + 306px)', width: primary ? 'min(600px, calc(100vw - 32px))' : `${secondaryWidth}px`, height: 'min(970px, calc((100vw - 32px) * 1.618), 100%)', x: primary ? '-50%' : '0%', y: '-50%', top: '50%', rotateY: primary ? 0 : -16, transformPerspective: perspective, scaleX: primary ? 1 : 0.9, scaleY: primary ? 1 : secondaryHeightScale, opacity: visible ? 1 : 0 }}
       transition={{ type: 'spring', stiffness: 240, damping: 30 }}
-      className={`absolute flex max-h-[calc(100dvh-150px)] touch-pan-y flex-col rounded-[24px] text-white data-[visible=false]:!hidden ${glass} ${primary ? 'z-20' : 'z-10 hidden min-[1100px]:flex'}`}
+      className={`absolute flex max-h-full touch-pan-y flex-col rounded-[24px] text-white data-[visible=false]:!hidden ${glass} ${primary ? 'z-20' : 'z-10 hidden min-[1100px]:flex'}`}
       onPointerDown={event => {
         const target = event.target as HTMLElement;
         if (event.button !== 0 || target.closest('button,input,textarea,a,[role="switch"]') || (event.pointerType === 'mouse' && !target.closest('header'))) return;
