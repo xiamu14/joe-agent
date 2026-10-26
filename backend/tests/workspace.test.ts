@@ -23,7 +23,7 @@ test('primary conversation cannot close and closing the last ordinary card resto
 });
 
 test('all card actions preserve one ordinary card and a visible primary', () => {
-  const cards: CardId[] = ['conversation', 'costs', 'time', 'settings', 'background'];
+  const cards: CardId[] = ['conversation', 'costs', 'time', 'settings'];
   let states = [initialWorkspace];
   for (let depth = 0; depth < 3; depth++) {
     states = states.flatMap(state => [swapCards(state), ...cards.flatMap(card => [openCard(state, card), closeCard(state, card)])]);
@@ -42,4 +42,5 @@ test('default input mute is backwards compatible and card requests are bounded',
   assert.equal(answerSchema.parse(answer).card, undefined);
   assert.equal(answerSchema.parse({ ...answer, card: 'costs' }).card, 'costs');
   assert.throws(() => answerSchema.parse({ ...answer, card: 'video' }));
+  assert.throws(() => answerSchema.parse({ ...answer, card: 'background' }));
 });

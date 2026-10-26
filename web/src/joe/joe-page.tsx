@@ -7,7 +7,7 @@ import { Composer } from '../components/conversation/composer';
 import { InfoPanel } from '../components/panels/info-panel';
 import { SettingsPanel } from '../components/panels/settings-panel';
 import { VoiceAccountPanel } from '../components/panels/voice-account-panel';
-import { Background, BackgroundPicker, backgrounds, type BackgroundId } from '../components/workspace/background';
+import { Background } from '../components/workspace/background';
 import { CardFrame } from '../components/workspace/card-frame';
 import { VoicePermission } from '../components/workspace/overlays';
 import { CardOverview } from '../components/workspace/card-overview';
@@ -18,18 +18,13 @@ import { initialWorkspace, openCard, closeCard, swapCards, cardNames, type CardI
 import { useJoe } from './use-joe';
 import { useVoiceInput } from './use-voice-input';
 import { agentVisual } from './visual';
-const panelBody = 'h-full overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#ffffff30_transparent]';
+const panelBody = 'h-full overflow-y-auto overscroll-contain';
 
 export function JoePage() {
   const joe = useJoe();
   const voice = useVoiceInput(joe);
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [overview, setOverview] = useState(false);
-  const [background, setBackground] = useState<BackgroundId>('neutral');
-  useEffect(() => {
-    const saved = localStorage.getItem('joe.background.v2');
-    if (saved && Object.hasOwn(backgrounds, saved)) setBackground(saved as BackgroundId);
-  }, []);
   useEffect(() => {
     if (joe.cardRequest) setWorkspace(current => openCard(current, joe.cardRequest!.card));
   }, [joe.cardRequest]);
@@ -41,10 +36,11 @@ export function JoePage() {
   const blocked = overview || voice.asking;
   const swap = () => setWorkspace(swapCards);
 
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-dvh overflow-hidden font-semibold text-white [color-scheme:light]" style={{ '--accent': visual.color } as CSSProperties}>
-        <Background selected={background} />
+        <Background />
         <main className="absolute inset-x-0 bottom-[112px] top-5" aria-label="交互空间">
           <CardFrame title="对话" primary={conversationPrimary} visible={!overview && workspace.conversation} blocked={blocked} onPromote={() => open('conversation')} onSwap={swap}
             actions={<Button className={roundButton} aria-label="新对话" disabled={!joe.sessionId || joe.uploading} onClick={() => void joe.newSession()}><Icon name="plus" /></Button>}>
@@ -68,13 +64,12 @@ export function JoePage() {
               <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><VoiceAccountPanel usage={joe.bootstrap?.usage} /></div>
               <div hidden={workspace.ordinary !== 'time'} className={panelBody}><InfoPanel bootstrap={joe.bootstrap} /></div>
               <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
-              <div hidden={workspace.ordinary !== 'background'} className={panelBody}><BackgroundPicker selected={background} onSelect={id => { setBackground(id); localStorage.setItem('joe.background.v2', id); }} /></div>
             </div>
           </CardFrame>
           <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} />
         </main>
         <Dock level={joe.level} timezone={joe.bootstrap?.settings.timezone || 'Asia/Shanghai'} visual={visual} active={!conversationPrimary && !voice.asking} status={voice.status}
-          overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onBackground={() => open('background')} onConversation={() => open('conversation')} />
+          overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onConversation={() => open('conversation')} />
         <VoicePermission open={voice.asking} ready={voice.ready} onEnable={voice.enable} onSkip={voice.skip} />
       </div>
     </MotionConfig>

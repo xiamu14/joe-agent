@@ -40,13 +40,13 @@ export function CardOverview({ open, onClose, onSelect, bootstrap, messages }: P
       transition={{ type: 'spring', stiffness: 240, damping: 30 }}
       className="mx-auto flex h-full w-[min(844px,calc(100vw-32px))] flex-col justify-center gap-3 py-3">
       <Button ref={closeButton} className={`${roundButton} self-end`} aria-label="关闭总览" onClick={onClose}><Icon name="close" /></Button>
-      <motion.div className="grid min-h-0 grid-cols-3 gap-x-3 gap-y-7 overflow-y-auto px-2 py-3 [perspective:1400px] max-sm:gap-x-2 max-sm:gap-y-4">
+      <motion.div className="grid min-h-0 grid-cols-3 gap-x-3 gap-y-7 overflow-y-auto p-6 [perspective:1400px] max-sm:gap-x-2 max-sm:gap-y-4">
         {(Object.keys(cardNames) as CardId[]).map((card, index) => (
           <Button key={card} onClick={() => onSelect(card)}
             render={<motion.button initial={false} animate={{ rotateY: index % 3 === 0 ? 12 : index % 3 === 2 ? -12 : 0, scale: 1, y: 0 }} whileHover={{ scale: 1.025, y: -3 }} whileTap={{ scale: 0.98 }} />}
             className={`flex aspect-[1.14] min-w-0 flex-col overflow-hidden rounded-[20px] text-left text-white outline-offset-4 focus-visible:outline-2 focus-visible:outline-white max-sm:aspect-[0.75] max-sm:rounded-xl ${glass}`}>
+            <span className="shrink-0 px-4 pt-4 text-sm font-semibold max-sm:px-2 max-sm:pt-3 max-sm:text-xs">{cardNames[card]}</span>
             <CardPreview card={card} bootstrap={bootstrap} messages={messages} time={time} />
-            <span className="px-4 pb-3 text-sm font-semibold max-sm:px-2 max-sm:text-xs">{cardNames[card]}</span>
           </Button>
         ))}
       </motion.div>

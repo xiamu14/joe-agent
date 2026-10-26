@@ -82,7 +82,7 @@ export type AgentEvent = {
   user?: Message;
   assistant?: Message;
   sources?: { title: string; url: string }[];
-  card?: 'time' | 'costs' | 'background' | 'settings';
+  card?: 'time' | 'costs' | 'settings';
 };
 
 export type VoiceAccount = {

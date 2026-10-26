@@ -35,7 +35,7 @@ npm run dev
 
 ## 会话与语音
 
-`/joe` 采用浅色流动背景与中性磨砂卡片，默认对话为主、费用为次。底部常驻时间、卡片总览、背景和 Joe 小球入口；首版含对话、费用、时间、背景和设置五类卡片。点击次卡片或左右滑动交换主次，窄屏只显示主卡片。详细规则见 [交互设计](docs/interaction-design.md)。
+`/joe` 采用固定图片背景与中性磨砂卡片，默认对话为主、费用为次。底部常驻时间、卡片总览和 Joe 小球入口；首版含对话、费用、时间和设置四类卡片。点击次卡片或左右滑动交换主次，窄屏只显示主卡片。详细规则见 [交互设计](docs/interaction-design.md)。
 
 - 文字通过 AI SDK UI Message SSE 流式返回，AI 在左，用户在右。Mastra Memory 统一保存消息、来源和情绪元数据；Joe SQLite 保存会话注册、设置、附件和用量，浏览器保存当前会话 ID。
 - 语音回答默认开启。回答完成后按语音配置准备播报文本，再按短句送对应音色的 TTS，逐句合成和播放，实际音频 RMS 驱动粒子强度；这是短句队列播放，不是双向实时音频流。
@@ -204,3 +204,7 @@ ElevenLabs 使用 `/v1/user/subscription`，展示本账期用量/配额、重�
 当前为本地单用户应用，`auto:ip` 使用本机后端的公网出口 IP；VPN/代理会影响定位，远程部署时需传入访问者 IP。定位不是精确 GPS。UI 隐藏旧城市/时区设置，保留已有设置数据以兼容历史记录。
 
 实现参考：[WeatherAPI 参数](https://www.weatherapi.com/docs/request-parameters/)、[OpenRouter weather tool 示例](https://openrouter.ai/docs/agent-sdk/call-model/examples/weather-tool)。保留现有 Mastra Agent 和工具调用链，无需引入另一套 Agent SDK。
+
+## 致谢
+
+流体头像采用 [Rare UI FluidOrb](https://www.rareui.com/components/fluidorb) 的着色器，许可证见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。

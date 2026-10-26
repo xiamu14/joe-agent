@@ -8,7 +8,7 @@ import { visualState } from '../src/state.js';
 const source = readFileSync(new URL('../src/orb.js', import.meta.url), 'utf8')
   .replace(/^import .*;\n/gm, '').replace('export function', 'function');
 
-function mount(compact = true) {
+function mount(pixelRatio = 3) {
   const calls = { renders: 0, sizes: 0, disposed: [], observerDisconnected: false };
   const events = new Map(), canvasEvents = new Map();
   let renderer, resize, now = 0, scene;
@@ -32,7 +32,7 @@ function mount(compact = true) {
   };
   const context = vm.createContext({
     THREE: { ...THREE, WebGLRenderer: Renderer },
-    vertexShader: '', fragmentShader: '', document, devicePixelRatio: 3,
+    vertexShader: '', fragmentShader: '', document, devicePixelRatio: pixelRatio,
     matchMedia: () => ({ matches: false }), performance: { now: () => now },
     ResizeObserver: class {
       constructor(fn) { resize = fn; }
@@ -41,15 +41,15 @@ function mount(compact = true) {
     },
   });
   vm.runInContext(source, context);
-  const orb = context.createOrb({ getBoundingClientRect: () => ({ width: 224, height: 174 }) }, visualState(), canvas, () => {}, compact);
+  const orb = context.createOrb({ getBoundingClientRect: () => ({ width: 224, height: 174 }) }, visualState(), canvas, () => {});
   return { orb, renderer, calls, document, events, canvasEvents, resize,
     scene, tick(value) { now = value; renderer.loop?.(value); } };
 }
 
-test('compact orbs budget particle count, pixel ratio and render rate on 120Hz screens', () => {
+test('fluid orbs use one quad and budget pixel ratio and render rate', () => {
   const m = mount();
-  assert.equal(m.scene.children[0].geometry.attributes.position.count, 13824);
-  assert.equal(m.renderer.ratio, 1.25);
+  assert.equal(m.scene.children[0].geometry.attributes.position.count, 4);
+  assert.equal(m.renderer.ratio, 2);
   for (let i = 1; i <= 120; i++) m.tick(i * 1000 / 120);
   assert.ok(m.calls.renders >= 25 && m.calls.renders <= 31);
   m.resize(); m.resize();
@@ -85,7 +85,7 @@ test('unmount frees geometry, renderer and listeners once', () => {
     child.material.addEventListener('dispose', () => resources++);
   }
   m.orb.dispose(); m.orb.dispose();
-  assert.equal(resources, 4);
+  assert.equal(resources, 2);
   assert.deepEqual(m.calls.disposed, ['renderer']);
   assert.equal(m.renderer.loop, null);
   assert.equal(m.events.size, 0);
@@ -93,11 +93,31 @@ test('unmount frees geometry, renderer and listeners once', () => {
   assert.equal(m.calls.observerDisconnected, true);
 });
 
-test('particles render directly on a transparent canvas without an opaque background', () => {
+test('fluid orbs render directly on a transparent canvas without an opaque background', () => {
   const m = mount();
   assert.equal(m.renderer.options.alpha, true);
   assert.equal(m.renderer.clearAlpha, 0);
   assert.equal(m.scene.background, null);
   assert.equal(m.scene.children[0].material.transparent, true);
   m.orb.dispose();
+});
+
+ test('paused orbs still update fault colors without restarting animation', () => {
+  const m = mount();
+  m.orb.pause(true);
+  const renders = m.calls.renders;
+  m.orb.update(visualState('error'));
+  assert.equal(m.renderer.loop, null);
+  assert.equal(m.calls.renders, renders + 1);
+  const color = m.scene.children[0].material.uniforms.u_color.value;
+  assert.ok(color.equals(new THREE.Color('#FF3B30').convertLinearToSRGB()));
+  m.orb.dispose();
+});
+
+test('retina orbs retain native resolution up to the rendering budget', () => {
+  for (const ratio of [1, 1.5, 2, 3]) {
+    const m = mount(ratio);
+    assert.equal(m.renderer.ratio, Math.min(ratio, 2));
+    m.orb.dispose();
+  }
 });

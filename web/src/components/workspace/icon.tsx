@@ -1,7 +1,6 @@
-type IconName = 'grid' | 'background' | 'close' | 'settings' | 'send' | 'muted' | 'mic' | 'plus' | 'stop' | 'clock' | 'costs' | 'conversation';
+type IconName = 'grid' | 'close' | 'settings' | 'send' | 'muted' | 'mic' | 'plus' | 'stop' | 'clock' | 'costs' | 'conversation';
 const paths: Record<IconName, string> = {
   grid: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
-  background: 'M4 4h16v16H4z M4 16l5-5 4 4 3-3 4 4 M15 8h.01',
   close: 'M6 6l12 12 M6 18L18 6',
   settings: 'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   send: 'M12 19V5 M6 11l6-6 6 6',

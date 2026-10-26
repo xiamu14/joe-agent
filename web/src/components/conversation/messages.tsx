@@ -9,7 +9,7 @@ export const MessageList = memo(function MessageList({ messages }: { messages: M
     if (list.current && following.current) list.current.scrollTop = list.current.scrollHeight;
   }, [messages]);
   return (
-    <div ref={list} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 pb-5 [scrollbar-width:thin] [scrollbar-color:#ffffff30_transparent]"
+    <div ref={list} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 pb-5"
       role="log" aria-label="当前会话" aria-live="off"
       onScroll={event => { const element = event.currentTarget; following.current = element.scrollHeight - element.clientHeight - element.scrollTop < 64; }}>
       {!messages.length && <div className="m-auto py-6 text-center text-base font-semibold text-white/90">你好，我是 Joe。</div>}

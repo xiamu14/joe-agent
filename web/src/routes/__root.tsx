@@ -2,6 +2,16 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-r
 import type { ReactNode } from 'react';
 import appCss from '../style.css?url';
 
+const scrollbars = [
+  '[&,&_*]:[scrollbar-width:thin] [&,&_*]:[scrollbar-color:rgba(255,255,255,0.32)_rgba(90,100,112,0.16)]',
+  '[@supports(selector(::-webkit-scrollbar))]:[&,&_*]:[scrollbar-width:auto] [@supports(selector(::-webkit-scrollbar))]:[&,&_*]:[scrollbar-color:auto]',
+  '[&::-webkit-scrollbar,&_*::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar,&_*::-webkit-scrollbar]:h-3',
+  '[&::-webkit-scrollbar-track,&_*::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track,&_*::-webkit-scrollbar-track]:bg-slate-600/15 [&::-webkit-scrollbar-track,&_*::-webkit-scrollbar-track]:my-3',
+  '[&::-webkit-scrollbar-thumb,&_*::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb,&_*::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb,&_*::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb,&_*::-webkit-scrollbar-thumb]:bg-white/35 [&::-webkit-scrollbar-thumb,&_*::-webkit-scrollbar-thumb]:bg-clip-padding',
+  '[&::-webkit-scrollbar-thumb:hover,&_*::-webkit-scrollbar-thumb:hover]:bg-white/50',
+  '[&::-webkit-scrollbar-button,&_*::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-corner,&_*::-webkit-scrollbar-corner]:bg-transparent',
+].join(' ');
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -24,7 +34,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html
       lang="zh-CN"
-      className="bg-[#05070e] font-sans text-[#e4e8f4] [font-synthesis:none] [color-scheme:dark]"
+      className={`bg-[#05070e] font-sans text-[#e4e8f4] [font-synthesis:none] [color-scheme:dark] ${scrollbars}`}
     >
       <head>
         <HeadContent />

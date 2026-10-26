@@ -13,13 +13,13 @@ export const states = {
 };
 
 export const emotions = {
-  encouraging: { label: '鼓励', color: '#e5c477', secondary: '#7fd2aa' },
-  concerned: { label: '关切', color: '#c3a47f', secondary: '#9b9ac4' },
-  calm: { label: '平静', color: '#164bff', secondary: '#00ceff' },
-  joy: { label: '愉悦', color: '#ffc975', secondary: '#ff8ab2' },
-  curious: { label: '好奇', color: '#69e9df', secondary: '#74a0ff' },
-  empathy: { label: '共情', color: '#dba4f3', secondary: '#ef9eae' },
-  serious: { label: '认真', color: '#72acfa', secondary: '#bbc9ed' },
+  encouraging: { label: '鼓励', color: '#34C759', secondary: '#7fd2aa' },
+  concerned: { label: '关切', color: '#D99A38', secondary: '#9b9ac4' },
+  calm: { label: '平静', color: '#1A73F2', secondary: '#00ceff' },
+  joy: { label: '愉悦', color: '#FF9500', secondary: '#ff8ab2' },
+  curious: { label: '好奇', color: '#00B8C4', secondary: '#74a0ff' },
+  empathy: { label: '共情', color: '#AF52DE', secondary: '#ef9eae' },
+  serious: { label: '认真', color: '#5856D6', secondary: '#bbc9ed' },
 };
 
 // Provider events and preview controls share the same validated visual state.
@@ -28,9 +28,11 @@ export function visualState(state = 'idle', emotion = 'calm', level = 0) {
   if (!Object.hasOwn(emotions, emotion)) throw new RangeError(`Unknown emotion: ${emotion}`);
   if (!Number.isFinite(level)) throw new TypeError('Audio level must be finite');
   const palette = state === 'error'
-    ? { color: '#ff748a', secondary: '#af77d9' }
+    ? { color: '#FF3B30', secondary: '#af77d9' }
+    : state === 'offline'
+      ? { color: '#8E8E93', secondary: '#C7C7CC' }
     : state === 'blocked'
-      ? { color: '#d5a66d', secondary: '#8a80bc' }
+      ? { color: '#F75001', secondary: '#8a80bc' }
       : emotions[(state === 'speaking' || state === 'responding') ? emotion : 'calm'];
   return { ...states[state], ...palette, state, emotion, level: Math.max(0, Math.min(1, level)) };
 }

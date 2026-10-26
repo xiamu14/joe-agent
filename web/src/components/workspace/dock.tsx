@@ -8,9 +8,9 @@ import type { agentVisual } from '../../joe/visual';
 
 type Props = {
   level: MotionValue<number>; timezone: string; visual: ReturnType<typeof agentVisual>; active: boolean; status: string;
-  overview: boolean; onTime: () => void; onOverview: () => void; onBackground: () => void; onConversation: () => void;
+  overview: boolean; onTime: () => void; onOverview: () => void; onConversation: () => void;
 };
-export function Dock({ level, timezone, visual, active, status, overview, onTime, onOverview, onBackground, onConversation }: Props) {
+export function Dock({ level, timezone, visual, active, status, overview, onTime, onOverview, onConversation }: Props) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => { setNow(Math.floor(Date.now() / 60000) * 60000); const timer = setInterval(() => setNow(Math.floor(Date.now() / 60000) * 60000), 1000); return () => clearInterval(timer); }, []);
   return (
@@ -21,7 +21,6 @@ export function Dock({ level, timezone, visual, active, status, overview, onTime
         </Button>
         <span className="mx-1 h-6 w-px bg-white/15" aria-hidden="true" />
         <Button aria-label="卡片总览" aria-expanded={overview} onClick={onOverview} className={`${roundButton} ${overview ? 'bg-white/25' : 'bg-transparent'}`}><Icon name="grid" /></Button>
-        <Button aria-label="切换背景" onClick={onBackground} className={`${roundButton} bg-transparent`}><Icon name="background" /></Button>
         <Button aria-label={`打开对话，${status}`} title={status} onClick={onConversation} className="relative ml-1 size-[48px] overflow-hidden rounded-full">
           <span className="pointer-events-none absolute inset-3"><ThoughtOrb level={level} visual={visual} compact active={active} /></span>
         </Button>
