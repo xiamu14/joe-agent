@@ -18,7 +18,7 @@ import { initialWorkspace, openCard, closeCard, swapCards, cardNames, type CardI
 import { useJoe } from './use-joe';
 import { useVoiceInput } from './use-voice-input';
 import { agentVisual } from './visual';
-const panelBody = 'h-full overflow-y-auto overscroll-contain';
+const panelBody = 'mr-1 h-full overflow-y-auto overscroll-contain';
 
 export function JoePage() {
   const joe = useJoe();
