@@ -1,3 +1,4 @@
+import { finishDesktopAction } from './desktop';
 import { registerApiRoute, type ContextWithMastra as Context } from '@mastra/core/server';
 import { z } from 'zod';
 import { configured, models, modelById } from './config';
@@ -107,6 +108,10 @@ export const routes = [
     return c.json(store.summary(store.settings().timezone));
   }),
   route('/weather', 'GET', async (c) => c.json(await currentWeather(c.req.raw.signal))),
+  route('/desktop-result', 'POST', async (c) => {
+    finishDesktopAction(await json(c));
+    return c.json({ ok: true });
+  }),
   route('/chat', 'POST', async (c) => chat(await json(c), c.req.raw.signal)),
   route('/cancel', 'POST', async (c) => {
     const value = z.object({ sessionId: idSchema, turnId: idSchema }).parse(await json(c));

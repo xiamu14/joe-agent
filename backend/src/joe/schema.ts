@@ -1,3 +1,4 @@
+import { desktopStateSchema } from './desktop';
 import { z } from 'zod';
 export const emotionSchema = z.enum([
   'calm',
@@ -49,6 +50,7 @@ export const chatSchema = z
     text: z.string().trim().max(12000),
     model: z.string().max(150),
     attachmentIds: z.array(idSchema).max(5).default([]),
+    desktop: desktopStateSchema.optional(),
   })
   .refine((v) => v.text.length > 0 || v.attachmentIds.length > 0, '请输入消息或添加文件');
 export function dayKey(time: number, timezone: string) {

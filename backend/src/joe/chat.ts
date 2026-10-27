@@ -1,3 +1,4 @@
+import { desktopExecutor } from './desktop';
 import { randomUUID } from 'node:crypto';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { RequestContext } from '@mastra/core/request-context';
@@ -114,10 +115,14 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         emit('state', { state: 'thinking' });
         const requestContext = new RequestContext();
         requestContext.set('model', model.id);
+        if (input.desktop) {
+          requestContext.set('desktop.state', JSON.stringify(input.desktop));
+          requestContext.set('desktop.execute', desktopExecutor(input.sessionId, input.turnId, signal, emit));
+        }
         const result = await joeAgent.stream([memoryMessage(user)], {
           requestContext,
           abortSignal: signal,
-          maxSteps: 4,
+          maxSteps: input.desktop ? 10 : 4,
           onStepFinish: (step) => {
             trackGeneration(input.turnId, step);
           },

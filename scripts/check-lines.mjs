@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-const ignored = new Set(['node_modules', '.git', '.mastra', '.tanstack', 'dist', 'data', '.output']);
+const ignored = new Set(['node_modules', '.git', '.mastra', '.tanstack', 'dist', 'data', '.output', '.build', 'build', '.swiftpm']);
 const violations = [];
 let count = 0;
 async function walk(directory) {
@@ -8,7 +8,7 @@ async function walk(directory) {
     if (ignored.has(entry.name)) continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await walk(path);
-    else if (/\.(?:[cm]?[jt]sx?|css|html)$/.test(entry.name)) {
+    else if (/\.(?:[cm]?[jt]sx?|css|html|swift)$/.test(entry.name)) {
       count++;
       const source = await readFile(path, 'utf8');
       const lines = source.split('\n').length - Number(source.endsWith('\n'));
