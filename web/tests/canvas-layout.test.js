@@ -10,9 +10,9 @@ test('randomized layout is stable for a seed and varies between page visits', ()
 test('cards form a moderately spaced group centered on the canvas', () => {
   for (let seed = 0; seed < 100; seed++) {
     const layout = createCanvasLayout(seed);
-    const center = cardIds.reduce((sum, id) => ({ x: sum.x + layout[id].x / 4, y: sum.y + layout[id].y / 4 }), { x: 0, y: 0 });
+    const center = cardIds.reduce((sum, id) => ({ x: sum.x + layout[id].x / cardIds.length, y: sum.y + layout[id].y / cardIds.length }), { x: 0, y: 0 });
     assert.ok(Math.abs(center.x) < 0.001 && Math.abs(center.y) < 0.001);
-    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 230 && Math.abs(layout[id].y) < 205));
+    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 320 && Math.abs(layout[id].y) < 230));
     for (let i = 0; i < cardIds.length; i++) {
       for (let j = i + 1; j < cardIds.length; j++) {
         const a = layout[cardIds[i]], b = layout[cardIds[j]];

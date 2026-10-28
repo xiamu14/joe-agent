@@ -8,15 +8,27 @@ const responseSchema = z.object({
     feelslike_c: z.number(),
     humidity: z.number(),
     wind_kph: z.number(),
-    condition: z.object({ text: z.string() }),
+    condition: z.object({ text: z.string(), code: z.number().int() }),
+    is_day: z.union([z.literal(0), z.literal(1)]),
     last_updated_epoch: z.number(),
   }),
+  forecast: z.object({ forecastday: z.array(z.object({
+    date: z.string(),
+    day: z.object({ mintemp_c: z.number() }),
+    astro: z.object({ sunrise: z.string(), sunset: z.string() }),
+  })).min(1) }),
 });
 export type Weather = {
   configured: boolean;
   place?: string;
   temperature?: number;
   feelsLike?: number;
+  minimum?: number;
+  forecastDate?: string;
+  conditionCode?: number;
+  isDay?: boolean;
+  sunrise?: string;
+  sunset?: string;
   condition?: string;
   humidity?: number;
   windKph?: number;
@@ -32,8 +44,8 @@ export async function weather(location: string, signal?: AbortSignal): Promise<W
   if (!key) return { configured: false };
   const cached = cache.get(query);
   if (cached && cached.expires > Date.now()) return cached.data;
-  const url = new URL('https://api.weatherapi.com/v1/current.json');
-  url.search = new URLSearchParams({ key, q: query, lang: 'zh' }).toString();
+  const url = new URL('https://api.weatherapi.com/v1/forecast.json');
+  url.search = new URLSearchParams({ key, q: query, days: '1', lang: 'zh' }).toString();
   try {
     const response = await fetch(url, {
       signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(10000)]),
@@ -49,12 +61,18 @@ export async function weather(location: string, signal?: AbortSignal): Promise<W
         throw new Error('请检查 WeatherAPI API Key 及服务权限');
       throw new Error('天气服务暂不可用');
     }
-    const { location: place, current } = responseSchema.parse(await response.json());
+    const { location: place, current, forecast } = responseSchema.parse(await response.json());
     const data: Weather = {
       configured: true,
       place: [...new Set([place.name, place.region, place.country].filter(Boolean))].join(' · '),
       temperature: current.temp_c,
       feelsLike: current.feelslike_c,
+      minimum: forecast.forecastday[0].day.mintemp_c,
+      forecastDate: forecast.forecastday[0].date,
+      conditionCode: current.condition.code,
+      isDay: current.is_day === 1,
+      sunrise: forecast.forecastday[0].astro.sunrise,
+      sunset: forecast.forecastday[0].astro.sunset,
       condition: current.condition.text,
       humidity: current.humidity,
       windKph: current.wind_kph,

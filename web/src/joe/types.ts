@@ -69,9 +69,18 @@ export type Weather = {
   configured: boolean;
   place?: string;
   temperature?: number;
+  feelsLike?: number;
+  windKph?: number;
+  minimum?: number;
+  forecastDate?: string;
   condition?: string;
+  conditionCode?: number;
+  isDay?: boolean;
+  sunrise?: string;
+  sunset?: string;
   timezone?: string;
   updatedAt?: number;
+  source?: string;
 };
 export type AgentEvent = {
   sessionId: string;

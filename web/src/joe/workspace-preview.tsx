@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Faq } from '../components/rare-ui/faq';
 import { TaskList } from '../components/rare-ui/task-list';
 import { TiltCard } from './tilt-card';
+import { WeatherCard } from './weather/weather-card';
 import { YouTubeCard } from './video/youtube-card';
 import { CanvasSceneContext, useCanvasSceneState } from './canvas-scene';
 import { useCanvasPan } from './use-canvas-pan';
@@ -51,6 +52,7 @@ export function CanvasPreview({ layout }: { layout: CanvasLayout }) {
         <Faq items={[{ id: 'idea', question: '如果再大胆一点？', answer: '让灵感先发生，答案慢慢来。' }]} defaultValue="idea" accent="#5b16cd" avatar={null} className="[&_[data-slot=faq-question]]:max-w-full [&_[data-slot=faq-question]]:bg-white/15! [&_[data-slot=faq-question]]:text-[13px] [&_[data-slot=faq-question]]:text-white! [&_[data-slot=faq-question]]:shadow-none! [&_[role=region]]:text-xs" />
       </TiltCard>
       <YouTubeCard />
+      <WeatherCard />
       <TiltCard id="tasks" surfaceClassName="rounded-[26px] bg-[#f4ff85] p-5 text-[#22251b] max-sm:p-4" label="待办卡片">
         <motion.div className="mb-6 flex items-center justify-between text-[10px] text-black/45">
           <motion.span>下一步</motion.span><motion.span className="font-mono">03</motion.span>

@@ -85,3 +85,7 @@ author's permission on these terms:
 Everything else in this repository, including the runtime
 (`orbkit-core.tsx`), the site, the build scripts, and the original orbs, is
 licensed under the MIT licence in [LICENSE](LICENSE).
+
+# Weather card assets
+
+The SVGs in `web/public/weather/` are copied unchanged from the three icon folders supplied by the user, originating from [Weather Icons (Community)](https://www.figma.com/design/LRAQq71aOQCoUpgOeB9UNd/Weather-Icons--Community-?node-id=705-753). Original filenames and weather meanings are recorded in `web/public/weather/README.md`. The earlier raster atlas and display mask have been removed. Background gradients are adapted visually from the user's reference; exact Figma gradient stops could not be inspected after the Starter MCP quota was reached.

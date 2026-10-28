@@ -9,9 +9,11 @@ const fixture = {
     feelslike_c: 27,
     humidity: 65,
     wind_kph: 12,
-    condition: { text: '多云' },
+    condition: { text: '多云', code: 1003 },
+    is_day: 1,
     last_updated_epoch: 1792700000,
   },
+  forecast: { forecastday: [{ date: '2026-10-28', day: { mintemp_c: 20 }, astro: { sunrise: '06:20 AM', sunset: '05:45 PM' } }] },
 };
 test('IP weather and city tool share WeatherAPI, cache results and hide credentials', async () => {
   const original = fetch,
@@ -21,8 +23,9 @@ test('IP weather and city tool share WeatherAPI, cache results and hide credenti
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
     assert.equal(url.origin, 'https://api.weatherapi.com');
-    assert.equal(url.pathname, '/v1/current.json');
+    assert.equal(url.pathname, '/v1/forecast.json');
     assert.equal(url.searchParams.get('key'), 'secret-key');
+    assert.equal(url.searchParams.get('days'), '1');
     queries.push(url.searchParams.get('q')!);
     return Response.json(fixture);
   };
@@ -30,6 +33,11 @@ test('IP weather and city tool share WeatherAPI, cache results and hide credenti
     const result = await currentWeather();
     assert.equal(result.temperature, 25);
     assert.equal(result.condition, '多云');
+    assert.equal(result.minimum, 20);
+    assert.equal(result.isDay, true);
+    assert.equal(result.conditionCode, 1003);
+    assert.equal(result.sunset, '05:45 PM');
+    assert.equal(result.forecastDate, '2026-10-28');
     assert.equal(result.place, 'Shenzhen · Guangdong · China');
     assert.equal(result.timezone, 'Asia/Shanghai');
     assert.equal(result.updatedAt, 1792700000000);

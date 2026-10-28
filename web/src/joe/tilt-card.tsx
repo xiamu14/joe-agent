@@ -9,7 +9,7 @@ import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
 
 const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
-export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose }: {
+export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto' }: {
   id: CanvasCardId;
   children: ReactNode;
   className?: string;
@@ -17,6 +17,8 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   label: string;
   onExpand?: () => void;
   onClose?: () => void;
+  expandedWidth?: string;
+  expandedHeight?: string;
 }) {
   const scene = useCanvasScene();
   const card = useRef<HTMLElement>(null);
@@ -58,12 +60,12 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
       className={`absolute ${className} ${selected ? 'cursor-auto' : 'cursor-pointer'} outline-none [perspective:1000px]`}
       aria-label={label} data-expanded={expanded || layoutExpanded} data-flipping={flipping}
       style={{
-        left: layoutExpanded ? '16.666667%' : `calc(50% + ${position.x}px)`,
+        left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
         top: layoutExpanded ? '50%' : `calc(50% + ${position.y}px)`,
-        width: layoutExpanded ? '66.666667%' : cardWidths[id],
-        height: layoutExpanded ? 'auto' : undefined,
+        width: layoutExpanded ? expandedWidth : cardWidths[id],
+        height: layoutExpanded ? expandedHeight : undefined,
         maxHeight: layoutExpanded ? '100cqh' : undefined,
-        translate: layoutExpanded ? '0 -50%' : '-50% -50%',
+        translate: '-50% -50%',
         x: panX, y: panY,
         zIndex: cardLayer(id, scene.selection?.id ?? null, scene.hovered),
       }}
