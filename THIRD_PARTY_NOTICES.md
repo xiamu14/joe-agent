@@ -39,3 +39,46 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+# OrbKit SHDR-01
+
+The empty-canvas orb uses [OrbKit SHDR-01](https://orbkit.zzzzshawn.cloud/), a shader by [XorDev](https://x.com/XorDev), ported by zzzzshawn with permission. The shader is for **non-commercial use only**, with attribution to XorDev; its source notice is preserved.
+
+The runtime is adapted from the official registry, split into smaller modules, with unused decorative wrappers omitted. The shader and default presets are unchanged.
+
+MIT License
+
+Copyright (c) 2026 zzzzshawn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+# Licence for the ported shaders
+
+The orb files listed under "Shaders by XorDev" in [OrbKit CREDITS.md](https://github.com/zzzzshawn/orbkit/blob/main/CREDITS.md) are
+derived from shaders by XorDev (https://x.com/XorDev) and are used with the
+author's permission on these terms:
+
+1. Non-commercial use only.
+2. Attribution to XorDev must be kept with every copy, including the notice at
+   the top of each file.
+3. Any further use of XorDev's work requires asking the author first.
+
+Everything else in this repository, including the runtime
+(`orbkit-core.tsx`), the site, the build scripts, and the original orbs, is
+licensed under the MIT licence in [LICENSE](LICENSE).

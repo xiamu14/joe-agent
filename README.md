@@ -209,3 +209,7 @@ ElevenLabs 使用 `/v1/user/subscription`，展示本账期用量/配额、重�
 ## 致谢
 
 流体头像采用 [Rare UI FluidOrb](https://www.rareui.com/components/fluidorb) 的着色器，许可证见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
+
+## 视觉组件署名
+
+空白画布使用 [OrbKit SHDR-01](https://orbkit.zzzzshawn.cloud/)，shader 作者为 [XorDev](https://x.com/XorDev)，由 zzzzshawn 移植。SHDR-01 仅限非商业使用并需保留署名；运行时为 MIT。详见 [第三方许可](THIRD_PARTY_NOTICES.md)。

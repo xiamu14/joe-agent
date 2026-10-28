@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { BounceSidebar } from '../components/rare-ui/bounce-sidebar';
 import { Faq } from '../components/rare-ui/faq';
-import { ParticleOrb } from '../components/particle-orb/particle-orb';
+import { Shdr01 } from '../components/shader-orb/shdr-01';
 import { CanvasPreview } from './workspace-preview';
 import { WorkspaceInput } from './workspace-input';
 
@@ -37,7 +37,7 @@ export function StaticWorkspace() {
               <AnimatePresence mode="wait" initial={false}>
                 {view === 0 ? <CanvasPreview key="preview" /> : (
                   <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex h-full w-full items-center justify-center pb-10">
-                    <ParticleOrb />
+                    <Shdr01 size={280} state="idle" className="max-h-full max-w-full" ariaLabel="SHDR-01 光球" />
 
                   </motion.div>
                 )}
