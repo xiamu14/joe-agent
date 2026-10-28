@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotionValue } from 'motion/react';
 import { api, jsonBody } from './api';
+import { canvasSessionId } from './session-storage';
 import { readEvents, extractSentence } from './stream';
 import { VoiceQueue } from './voice-queue';
 import type {
@@ -14,9 +15,10 @@ import type {
   Usage,
 } from './types';
 
-export function useJoe() {
+export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { sessionKey?: string; voiceOutput?: boolean } = {}) {
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null),
     [messages, setMessages] = useState<Message[]>([]);
+  const [greetingToPlay, setGreetingToPlay] = useState('');
   const [sessionId, setSessionId] = useState(''),
     [state, setState] = useState<AgentState>('idle');
   const [expression, setExpression] = useState<Expression>({
@@ -51,17 +53,16 @@ export function useJoe() {
   const connect = useCallback(async (signal?: AbortSignal) => {
     try {
       const config = await api<Bootstrap>('/bootstrap', { signal });
-      const storedId = localStorage.getItem('joe.session');
-      const id =
-        storedId && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(storedId) ? storedId : undefined;
-      const session = await api<{ id: string; messages: Message[] }>('/session', {
+      const id = canvasSessionId(localStorage, sessionKey, () => crypto.randomUUID());
+      const session = await api<{ id: string; created?: boolean; messages: Message[] }>('/session', {
         ...jsonBody({ id }),
         signal,
       });
       if (signal?.aborted || !mounted.current) return;
-      localStorage.setItem('joe.session', session.id);
+      localStorage.setItem(sessionKey, session.id);
       setSessionId(session.id);
       setMessages(session.messages);
+      setGreetingToPlay(session.created ? session.messages.find(m => m.kind === 'greeting')?.id || '' : '');
       settingsRef.current = config.settings;
       setBootstrap(config);
       setState('idle');
@@ -71,7 +72,7 @@ export function useJoe() {
       setState('offline');
       setError(e instanceof Error ? e.message : '无法连接 Joe 服务');
     }
-  }, []);
+  }, [sessionKey]);
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
@@ -164,7 +165,7 @@ export function useJoe() {
     const id = crypto.randomUUID();
     turn.current = id;
     abort.current = new AbortController();
-    turnVoice.current = Boolean(settingsRef.current?.voice);
+    turnVoice.current = voiceOutput && Boolean(settingsRef.current?.voice);
     setBusy(true);
     setState('thinking');
     setError('');
@@ -330,10 +331,11 @@ export function useJoe() {
     uploadAbort.current?.abort();
     setUploading(false);
     try {
-      const session = await api<{ id: string; messages: Message[] }>('/session', jsonBody({}));
-      localStorage.setItem('joe.session', session.id);
+      const session = await api<{ id: string; created?: boolean; messages: Message[] }>('/session', jsonBody({}));
+      localStorage.setItem(sessionKey, session.id);
       setSessionId(session.id);
-      setMessages([]);
+      setMessages(session.messages);
+      setGreetingToPlay(session.messages.find(m => m.kind === 'greeting')?.id || '');
       setAttachments([]);
       setState('idle');
       setError('');
@@ -343,6 +345,8 @@ export function useJoe() {
   }
   return {
     bootstrap,
+    greetingToPlay,
+    acknowledgeGreeting: () => setGreetingToPlay(''),
     messages,
     sessionId,
     state: playing ? ('speaking' as const) : state,

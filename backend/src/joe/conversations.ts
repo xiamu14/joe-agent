@@ -47,7 +47,14 @@ export async function ensureConversation(session: string) {
   const id = threadId(session);
   const thread = await joeMemory.getThreadById({ threadId: id });
   if (thread && thread.resourceId !== resourceId) throw new Error('会话不属于当前用户');
-  if (thread?.metadata?.joeCanonical) return;
+  if (thread?.metadata?.joeCanonical) {
+    const greeting = store.messages(session).find(message => message.kind === 'greeting');
+    if (greeting && thread.metadata.joeGreeting !== greeting.id) {
+      await joeMemory.saveMessages({ messages: [{ ...memoryMessage(greeting), id: `joe:${greeting.id}` }] });
+      await joeMemory.updateThread({ id, metadata: { ...thread.metadata, joeGreeting: greeting.id } });
+    }
+    return;
+  }
   if (!thread)
     await joeMemory.createThread({
       threadId: id,
@@ -65,7 +72,7 @@ export async function ensureConversation(session: string) {
     });
   await joeMemory.updateThread({
     id,
-    metadata: { ...thread?.metadata, joeCanonical: true },
+    metadata: { ...thread?.metadata, joeCanonical: true, joeGreeting: legacy.find(message => message.kind === 'greeting')?.id },
   });
 }
 export async function conversationMessages(session: string): Promise<Message[]> {

@@ -160,6 +160,12 @@ Fish Provider 保留文件转写，使用本地能量检测决定说话结束，
 - 语音适配器继承 MastraVoice；保留厂商 HTTP 实现以支持 AbortSignal、Fish 时长计费和精确错误映射。ElevenLabs 浏览器实时转写令牌属于扩展能力，未替换为不等价的服务端音频会话。
 - 数据目录曾因 Mastra dev 更改 cwd 落到 public；已备份并迁到 backend/data。`data/backups` 保留原始数据库与一致性快照，不进入构建资源。
 
+### 新会话问候
+
+新建会话时保存一次「我在呢，今天过得怎么样？」，已有会话进入时补齐，重复进入不会再次发送。问候作为独立消息保留在历史中，支持重播。固定音频位于 `web/public/audio/greeting-zh.mp3`，由 ElevenLabs 中文音色生成，所有会话复用；浏览器阻止自动播放时可手动播放。
+
+音频缺失时，在 `backend` 目录执行 `node --env-file=.env --import tsx scripts/generate-greeting.ts`。需要 `ELEVENLABS_API_KEY` 和 `ELEVENLABS_VOICE_ID_ZH`；已有音频不会覆盖。
+
 ### 语音语种与音色
 
 设置中的「语音配置」默认「自动」，也可固定 English 或 Chinese。每轮开始时固定所选模式。

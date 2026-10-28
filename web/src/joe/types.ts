@@ -19,6 +19,8 @@ export type Message = {
   turnId: string;
   role: 'user' | 'assistant';
   text: string;
+  kind?: 'greeting';
+  audioUrl?: string;
   visibleText?: string;
   speechText?: string;
   speechLanguage?: 'en' | 'zh';

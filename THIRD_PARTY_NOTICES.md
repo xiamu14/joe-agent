@@ -4,6 +4,9 @@ The fluid shader in `web/src/orb-shaders.js` is adapted from [Rare UI FluidOrb](
 
 The static workspace also uses the official [FAQ](https://www.rareui.com/components/faq), [Fluid Orb](https://www.rareui.com/components/fluidorb), [Bounce Sidebar](https://www.rareui.com/components/bouncesidebar), and [Task List](https://www.rareui.com/components/tasklist) sources in `web/src/components/rare-ui/`. Import paths and the Next.js link were adapted to this React application; Task List was split into two files.
 
+[Inline AI Status](https://www.rareui.com/components/aistatus) is vendored from the official Rare UI registry in `ai-status.tsx` and `ai-status-icon.tsx`. Only the import paths and file split were adapted; backend state labels use the component props.
+
+
 MIT + Commons Clause License Condition v1.0 + Attribution
 
 Copyright (c) 2026 Swami Malode

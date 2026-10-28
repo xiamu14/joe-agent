@@ -1,21 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type SetStateAction } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { BounceSidebar } from '../components/rare-ui/bounce-sidebar';
-import { Faq } from '../components/rare-ui/faq';
+import { WorkspaceChat } from './workspace-chat';
+import { workspaceOrbState } from './workspace-orb-state';
+import { useJoe } from './use-joe';
 import { Shdr01 } from '../components/shader-orb/shdr-01';
 import { CanvasPreview } from './workspace-preview';
 import { WorkspaceInput } from './workspace-input';
 import { createCanvasLayout, type CanvasLayout } from './canvas-layout';
 
-const conversations = [
-  { id: 'start', question: '帮我整理一下这些想法', answer: '当然。把零散的灵感，变成清晰的下一步。' },
-  { id: 'files', question: '这份文件讲了什么？', answer: '重点已经放在画布上，随时接着聊。' },
-  { id: 'todo', question: '接下来做什么？', answer: '先收集灵感，再把想做的事逐一展开。' },
-  { id: 'voice', question: '我们聊聊新的方向', answer: '我在听，想到什么就说什么。' },
-];
-
 export function StaticWorkspace() {
   const [view, setView] = useState(0);
+  const example = useJoe({ sessionKey: 'joe.canvas.example.session', voiceOutput: false });
+  const empty = useJoe({ sessionKey: 'joe.canvas.empty.session', voiceOutput: false });
+  const joe = view === 0 ? example : empty;
+  const [speech, setSpeech] = useState([false, false]);
+  const onSpeakingChange = useCallback((playing: boolean) => {
+    setSpeech(previous => previous.map((value, index) => index === view ? playing : value));
+  }, [view]);
+  const orbState = workspaceOrbState(joe.state, joe.busy, speech[view] || joe.playing);
+  const [drafts, setDrafts] = useState(['', '']);
+  const setDraft = (text: SetStateAction<string>) => setDrafts(previous => previous.map((draft, index) => index === view ? typeof text === 'function' ? text(draft) : text : draft));
   const [layout, setLayout] = useState<CanvasLayout | null>(null);
   useEffect(() => { setLayout(createCanvasLayout(crypto.getRandomValues(new Uint32Array(1))[0])); }, []);
   return (
@@ -40,23 +45,15 @@ export function StaticWorkspace() {
               <AnimatePresence mode="wait" initial={false}>
                 {view === 0 ? layout && <CanvasPreview key="preview" layout={layout} /> : (
                   <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex h-full w-full items-center justify-center pb-10">
-                    <Shdr01 size={280} state="idle" className="max-h-full max-w-full" ariaLabel="SHDR-01 光球" />
+                    <Shdr01 size={280} state={orbState} className="max-h-full max-w-full" ariaLabel={`SHDR-01 光球 · ${orbState}`} />
 
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
-            <WorkspaceInput />
+            <WorkspaceInput text={drafts[view]} onTextChange={setDraft} onSend={joe.send} ready={Boolean(joe.sessionId)} busy={joe.busy} />
           </motion.section>
-          <motion.aside initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="flex min-h-[480px] flex-col rounded-[28px] bg-[#151515] p-6 lg:col-start-3 lg:row-start-1 lg:min-h-0" aria-label="聊天记录">
-            <motion.div className="mb-8 flex items-center justify-between">
-              <motion.h2 className="text-sm font-medium">对话</motion.h2>
-              <motion.span className="font-mono text-[10px] tracking-widest text-white/25">04</motion.span>
-            </motion.div>
-            <motion.div className="min-h-0 flex-1 overflow-y-auto pb-4">
-              <Faq items={conversations} defaultValue="start" accent="#7252e8" avatar={null} className="gap-4 [&_[data-slot=faq-question]]:bg-[#262626]! [&_[data-slot=faq-question]]:text-[13px] [&_[data-slot=faq-question]]:text-white/80! [&_[data-slot=faq-question]]:shadow-none! [&_[role=region]]:text-[13px] [&_[role=region]]:leading-6" />
-            </motion.div>
-          </motion.aside>
+          <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} />
         </motion.div>
       </motion.main>
     </MotionConfig>

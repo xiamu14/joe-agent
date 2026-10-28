@@ -1,3 +1,4 @@
+import { greetingMessage } from './greeting';
 import { dataDirectory } from './data-directory';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
@@ -11,6 +12,8 @@ export type Message = {
   turnId: string;
   role: 'user' | 'assistant';
   text: string;
+  kind?: 'greeting';
+  audioUrl?: string;
   sources?: { title: string; url: string }[];
   status: string;
   model: string;
@@ -44,11 +47,32 @@ export class Store {
       }
     }
   }
-  session(id?: string) {
-    if (id && this.db.prepare('SELECT id FROM sessions WHERE id=?').get(id)) return id;
+  session(id?: string, greet = false) {
+    if (id && this.db.prepare('SELECT id FROM sessions WHERE id=?').get(id)) {
+      if (greet) this.ensureGreeting(id);
+      return id;
+    }
     const next = randomUUID();
-    this.db.prepare('INSERT INTO sessions VALUES (?,?)').run(next, Date.now());
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('INSERT INTO sessions VALUES (?,?)').run(next, Date.now());
+      if (greet) this.ensureGreeting(next);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
     return next;
+  }
+  ensureGreeting(sessionId: string) {
+    this.requireSession(sessionId);
+    const existing = this.messages(sessionId).find(message => message.kind === 'greeting');
+    if (existing) return existing;
+    const greeting = greetingMessage(sessionId);
+    const session = this.db.prepare('SELECT created FROM sessions WHERE id=?').get(sessionId)!;
+    greeting.createdAt = Number(session.created) - 1;
+    this.saveMessage(greeting);
+    return greeting;
   }
   requireSession(id: string) {
     if (!this.db.prepare('SELECT id FROM sessions WHERE id=?').get(id)) throw new Error('会话不存在');

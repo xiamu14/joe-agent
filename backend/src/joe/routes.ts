@@ -96,8 +96,8 @@ export const routes = [
   }),
   route('/session', 'POST', async (c) => {
     const body = z.object({ id: idSchema.optional() }).parse(await json(c));
-    const id = store.session(body.id);
-    return c.json({ id, messages: await conversationMessages(id) });
+    const id = store.session(body.id, true);
+    return c.json({ id, created: id !== body.id, messages: await conversationMessages(id) });
   }),
   route('/voice-account', 'GET', async (c) => {
     c.header('Cache-Control', 'no-store');
