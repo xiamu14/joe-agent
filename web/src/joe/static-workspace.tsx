@@ -27,18 +27,18 @@ export function StaticWorkspace() {
   useEffect(() => { const value = loadCanvas(createCanvasLayout(crypto.getRandomValues(new Uint32Array(1))[0])); setSnapshot(value); saveCanvas(value); }, []);
   return (
     <MotionConfig reducedMotion="user" transition={{ type: 'spring', stiffness: 240, damping: 28 }}>
-      <motion.main className="relative min-h-dvh overflow-x-hidden bg-[#111114] p-5 pb-2.5 text-[#f5f5f3] [color-scheme:dark] sm:p-8 sm:pb-4 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden" aria-label="Joe 工作空间">
-        <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6 flex h-12 shrink-0 items-center justify-between lg:mb-8">
+      <motion.main className="relative min-h-dvh overflow-x-hidden bg-[#111114] p-5 pb-2.5 text-[#f5f5f3] [color-scheme:dark] sm:p-8 sm:pb-4 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden lg:pt-[34px]" aria-label="Joe 工作空间">
+        <motion.div className="grid min-h-0 flex-1 gap-5 lg:[--chat-width:240px] lg:grid-cols-[160px_minmax(0,1fr)_var(--chat-width)] lg:grid-rows-[minmax(0,1fr)_auto] xl:[--chat-width:260px] xl:grid-cols-[180px_minmax(0,1fr)_var(--chat-width)] xl:gap-7">
+        <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-12 shrink-0 items-center lg:col-start-1 lg:row-start-1 lg:h-auto lg:self-start">
           <motion.div className="flex items-center gap-3">
             <motion.img src="/favicon.svg" alt="" width={30} height={30} className="size-[27px] shrink-0 sm:size-[30px]" />
             <motion.div className="flex items-baseline gap-3">
               <motion.span className="text-[20px] font-semibold tracking-tight sm:text-[24px]">Joe.</motion.span>
-              <motion.span className="whitespace-nowrap text-[11px] text-white/40 sm:text-xs">全能情绪伙伴</motion.span>
+              <motion.span className="whitespace-nowrap text-[11px] text-white/40 sm:text-xs">智能助理</motion.span>
             </motion.div>
           </motion.div>
         </motion.header>
-        <motion.div className="grid min-h-0 flex-1 gap-5 lg:[--chat-width:240px] lg:grid-cols-[160px_minmax(0,1fr)_var(--chat-width)] lg:grid-rows-[minmax(0,1fr)_auto] xl:[--chat-width:260px] xl:grid-cols-[180px_minmax(0,1fr)_var(--chat-width)] xl:gap-7">
-          <motion.aside initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center gap-8 py-4 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:max-h-[66.666667%] lg:self-center lg:justify-start lg:overflow-y-auto lg:rounded-[24px] lg:py-0" aria-label="空间信息">
+          <motion.aside initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center gap-8 py-4 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:self-stretch lg:overflow-y-auto lg:pb-0 lg:pt-20" aria-label="空间信息">
             <motion.div className="rounded-[24px] bg-[#151515] px-3 py-6 lg:shrink-0">
               <motion.p className="mb-3 pl-2 pr-4 text-xs text-white/35">我的空间</motion.p>
               <BounceSidebar items={['示例画布', '空白画布']} value={view} onChange={setView} dotColor="#FC4C01" className="gap-1 text-white [&_[data-slot=bounce-sidebar-item]]:py-2 [&_[data-active=false]]:text-white/40 [&_[data-active=true]]:text-white" />
