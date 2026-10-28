@@ -1,5 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import appCss from '../style.css?url';
 
 const scrollbars = [
@@ -31,10 +31,14 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    document.fonts.add(new FontFace('Vivo Sans', 'url(/fonts/vivo-sans-regular.ttf)', { weight: '400', display: 'swap' }));
+    document.fonts.add(new FontFace('Vivo Sans', 'url(/fonts/vivo-sans-medium.ttf)', { weight: '500', display: 'swap' }));
+  }, []);
   return (
     <html
       lang="zh-CN"
-      className={`bg-[#05070e] font-sans text-[#e4e8f4] [font-synthesis:none] [color-scheme:dark] ${scrollbars}`}
+      className={`bg-[#05070e] font-['Vivo_Sans',sans-serif] text-[#e4e8f4] [--font-mono:'Vivo_Sans',sans-serif] [font-synthesis:none] [color-scheme:dark] ${scrollbars}`}
     >
       <head>
         <HeadContent />
