@@ -20,9 +20,9 @@ export function createCanvasLayout(seed: number): CanvasLayout {
   return Object.fromEntries(cardIds.map((id, i) => [id, { x: points[i].x - center.x, y: points[i].y - center.y, rotation: -5 + random() * 15 }])) as CanvasLayout;
 }
 
-export function cardLayer(id: CanvasCardId, selected: CanvasCardId | null, hovered: CanvasCardId | null, dragged: CanvasCardId | null = null) {
+export function cardLayer(id: CanvasCardId, selected: CanvasCardId | null, foreground: CanvasCardId | null, dragged: CanvasCardId | null = null) {
   if (id === selected) return 100;
   if (!selected && id === dragged) return 60;
-  if (!selected && id === hovered) return 30;
+  if (!selected && id === foreground) return 30;
   return cardIds.indexOf(id) + 1;
 }

@@ -46,7 +46,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
     x.set(tilt.rotateX); y.set(tilt.rotateY);
   }
   function reset() {
-    scene.setHovered(current => current === id ? null : current);
+    scene.hoverIntent.leave(id);
     x.set(0); y.set(0);
   }
   function open() {
@@ -69,12 +69,13 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
         maxHeight: layoutExpanded ? '100cqh' : undefined,
         translate: '-50% -50%',
         x: panX, y: panY,
-        zIndex: cardLayer(id, scene.selection?.id ?? null, scene.hovered, scene.dragging),
+        zIndex: cardLayer(id, scene.selection?.id ?? null, scene.foreground, scene.dragging),
       }}
-      onHoverStart={event => {
-        if (!reduced && !selected && !blocked && !scene.dragging && event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scene.setHovered(id);
+      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverEnd={reset} onPointerDown={drag.down} onPointerUp={drag.end} onLostPointerCapture={drag.end} onPointerCancel={event => { drag.end(event); reset(); }} onPointerMove={event => {
+        drag.move(event);
+        if (!reduced && !selected && !blocked && !scene.dragging && event.buttons === 0 && event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scene.hoverIntent.move(id, { x: event.clientX, y: event.clientY });
+        if (!scene.dragging) follow(event);
       }}
-      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverEnd={reset} onPointerDown={drag.down} onPointerUp={drag.end} onLostPointerCapture={drag.end} onPointerCancel={event => { drag.end(event); reset(); }} onPointerMove={event => { drag.move(event); if (!scene.dragging) follow(event); }}
       onClick={event => { if (!selected && !blocked && !(event.target as Element).closest(cardControls)) open(); }}
     >
       <motion.div animate={controls} className="h-full [backface-visibility:hidden] [transform-style:preserve-3d]">
@@ -83,8 +84,8 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
           animate={selected
             ? { y: 0, scale: 1, boxShadow: '0 32px 96px rgba(0,0,0,0.4)' }
             : scene.dragging === id ? { y: 0, scale: 1, boxShadow: '0 24px 65px rgba(0,0,0,0.3)' }
-            : active ? { y: -6, scale: 1.01, boxShadow: '0 18px 55px rgba(0,0,0,0.22)' }
-              : { y: 0, scale: 1, boxShadow: '0 0 0 rgba(0,0,0,0)' }} transition={reduced ? { duration: 0 } : spring}>
+            : active ? { y: scene.foreground === id ? -6 : -2, scale: scene.foreground === id ? 1.015 : 1.005, boxShadow: '0 18px 55px rgba(0,0,0,0.22)' }
+              : { y: 0, scale: 1, boxShadow: '0 0 0 rgba(0,0,0,0)' }} transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 32 }}>
           <motion.button type="button" aria-label={`展开${label}`} aria-expanded={expanded} onClick={open} disabled={selected} className="sr-only focus:not-sr-only focus:absolute focus:right-3 focus:top-3 focus:z-10 focus:rounded-full focus:bg-black/10 focus:px-3 focus:py-2">展开</motion.button>
           {layoutExpanded && <motion.button type="button" data-close-card aria-label={`收起${label}`} onClick={close} disabled={flipping} className="absolute right-3 top-3 z-10 grid size-8 place-items-center rounded-full bg-black/10" whileTap={{ scale: 0.95 }}><Icon name="close" className="size-4" /></motion.button>}
           {children}

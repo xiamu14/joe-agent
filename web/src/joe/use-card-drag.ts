@@ -70,7 +70,7 @@ export function useCardDrag(id: CanvasCardId, scene: CanvasScene, disabled: bool
     if (!current.moved && Math.hypot(event.clientX - current.start.x, event.clientY - current.start.y) < 5) return;
     if (!current.moved) {
       current.moved = true;
-      latest.current.scene.setDragging(id); latest.current.onStart();
+      latest.current.scene.setForeground(id); latest.current.scene.setDragging(id); latest.current.onStart();
       previousFrame.current = performance.now(); frame.current = requestAnimationFrame(tick);
     }
     scene.suppressClick.current = true;

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="318" height="319" viewBox="18 4 318 319" fill="none">
+  <title>蓝色眼睛图标</title>
+  <defs>
+    <linearGradient id="blue" x1="176" y1="8" x2="176" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#303fea"/>
+      <stop offset=".55" stop-color="#3542ee"/>
+      <stop offset="1" stop-color="#575af5"/>
+    </linearGradient>
+    <linearGradient id="face" x1="199" y1="108" x2="186" y2="323" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f2f1ff"/>
+      <stop offset=".46" stop-color="#e8e9ff"/>
+      <stop offset="1" stop-color="#d9dcff"/>
+    </linearGradient>
+    <linearGradient id="iris" x1="0" y1="0" x2=".7" y2="1">
+      <stop stop-color="#192e62"/>
+      <stop offset=".55" stop-color="#263e85"/>
+      <stop offset="1" stop-color="#405caf"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="176" y1="5" x2="176" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b3b6ff" stop-opacity=".55"/>
+      <stop offset=".17" stop-color="#9b9ffb" stop-opacity=".16"/>
+      <stop offset=".7" stop-color="#a1a9ff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".6"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.3"/></filter>
+    <filter id="faceSoft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.5"/></filter>
+    <path id="outline" d="M110 5C79 5 61 8 44 24C25 42 18 65 18 98V227C18 261 23 281 40 298C57 317 79 322 111 322H242C276 322 297 318 315 299C332 281 336 260 336 228V99C336 66 331 44 313 26C295 8 276 5 244 5Z"/>
+    <clipPath id="clip"><use href="#outline"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <use href="#outline" fill="url(#blue)"/>
+    <g filter="url(#soft)">
+      <path d="M18 144C40 105 59 105 86 101C111 98 124 83 141 62C166 30 207 29 233 52C263 78 283 80 309 72C320 69 330 71 341 77V330H18Z" fill="#3a47ed"/>
+      <path d="M18 175C33 133 56 120 83 119C112 118 129 105 146 84C168 56 201 54 225 69C249 84 258 98 287 95C312 90 325 91 341 104V330H18Z" fill="#4350ef"/>
+      <path d="M25 269C33 248 39 231 36 208C30 174 45 146 69 139C85 133 105 136 123 127C143 118 147 101 164 92C185 80 205 83 220 91C244 104 249 116 276 114C304 109 319 112 341 132V330H25Z" fill="#505bf1"/>
+      <path d="M36 295C29 275 47 254 53 235C61 212 48 200 57 177C65 153 83 150 105 150C132 151 147 139 160 122C177 100 202 101 219 109C242 120 250 138 280 133C307 128 324 139 341 158V330H45Z" fill="#6670f5"/>
+    </g>
+    <path d="M56 313C44 295 48 274 62 255C74 240 79 224 74 208C68 183 81 162 100 155C117 149 138 152 152 138C161 129 164 116 181 110C198 103 216 105 229 115C246 130 258 134 278 131C305 126 326 139 337 163L343 325H80Z" fill="url(#face)"/>
+    <path d="M58 311C50 295 54 275 68 254C80 235 83 221 78 205C74 184 87 167 104 161C124 155 143 157 158 141C168 131 172 120 184 116C198 110 212 112 226 122" stroke="#c8caff" stroke-opacity=".45" stroke-width="7" filter="url(#faceSoft)"/>
+    <path d="M122 241C126 232 132 226 142 223" stroke="#425eb5" stroke-width="6" stroke-linecap="round"/>
+    <path d="M252 189C260 184 270 184 279 189" stroke="#405bb1" stroke-width="6" stroke-linecap="round"/>
+    <path d="M204 242C218 259 217 282 202 298C186 313 163 315 145 302C127 289 121 270 131 251C139 233 158 224 176 226C188 228 197 234 204 242Z" fill="#fcffff"/>
+    <path d="M205 247C217 263 213 285 198 296C183 308 164 301 153 289C141 276 140 259 151 245C165 227 191 228 205 247Z" fill="url(#iris)"/>
+    <path d="M285 204C304 214 312 234 306 254C300 276 280 288 258 282C237 277 223 264 220 246C217 227 228 210 244 203C257 197 273 197 285 204Z" fill="#fcffff"/>
+    <path d="M275 212C291 221 296 242 288 259C280 277 264 283 248 275C232 268 222 254 224 239C224 223 236 210 250 208C259 207 267 208 275 212Z" fill="url(#iris)"/>
+    <path d="M186 244L189 249L195 250L190 254L190 260L185 256L180 256L183 251Z" fill="white"/>
+    <ellipse cx="199" cy="256" rx="2.1" ry="2.5" fill="white"/>
+    <path d="M263 215L266 219L272 221L267 224L266 230L262 226L257 226L260 221Z" fill="white"/>
+    <ellipse cx="277" cy="227" rx="2" ry="2.4" fill="white"/>
+    <use href="#outline" stroke="url(#rim)" stroke-width="3" filter="url(#soft)"/>
+  </g>
+</svg>
