@@ -162,7 +162,7 @@ Fish Provider 保留文件转写，使用本地能量检测决定说话结束，
 
 ### 新会话问候
 
-新建会话时保存一次「我在呢，今天过得怎么样？」，已有会话进入时补齐，重复进入不会再次发送。问候作为独立消息保留在历史中，支持重播。固定音频位于 `web/public/audio/greeting-zh.mp3`，由 ElevenLabs 中文音色生成，所有会话复用；浏览器阻止自动播放时可手动播放。
+新建会话时保存一次「我是 Joe，今天过的怎么样？」，已有会话进入时补齐，重复进入不会再次发送。问候作为独立消息保留在历史中，支持重播。固定音频位于 `web/public/audio/greeting-joe.mp3`，由 ElevenLabs 中文音色生成，所有会话复用；浏览器阻止自动播放时可手动播放。
 
 音频缺失时，在 `backend` 目录执行 `node --env-file=.env --import tsx scripts/generate-greeting.ts`。需要 `ELEVENLABS_API_KEY` 和 `ELEVENLABS_VOICE_ID_ZH`；已有音频不会覆盖。
 

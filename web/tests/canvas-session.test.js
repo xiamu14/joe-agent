@@ -26,7 +26,7 @@ test('streaming messages pair by turn without leaking replies into other turns',
 });
 
 test('standalone greetings stay outside the collapsible chat turns', () => {
-  const greeting = { id: 'g1', turnId: 'greeting', role: 'assistant', text: '我在呢，今天过得怎么样？', kind: 'greeting' };
+  const greeting = { id: 'g1', turnId: 'greeting', role: 'assistant', text: '我是 Joe，今天过的怎么样？', kind: 'greeting' };
   const user = { id: 'u1', turnId: 't1', role: 'user', text: '你好' };
   assert.deepEqual(chatTurns([greeting, user]), [{ id: 't1', question: '你好' }]);
 });

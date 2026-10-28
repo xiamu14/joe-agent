@@ -3,9 +3,9 @@ import { writeFile, access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { voiceConfig } from '../src/joe/voice-providers/config';
 import { elevenLabsProvider } from '../src/joe/voice-providers/elevenlabs';
-import { greetingText } from '../src/joe/greeting';
+import { greetingAudio, greetingText } from '../src/joe/greeting';
 
-const target = resolve(import.meta.dirname, '../../web/public/audio/greeting-zh.mp3');
+const target = resolve(import.meta.dirname, '../../web/public', `.${greetingAudio}`);
 try {
   await access(target);
   console.log('Greeting audio already exists; keeping the fixed recording.');

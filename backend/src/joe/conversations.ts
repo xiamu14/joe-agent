@@ -2,6 +2,7 @@ import type { MastraDBMessage } from '@mastra/core/memory';
 import { joeMemory, resourceId } from './memory';
 import { store, type Message } from './store';
 import { answerSchema } from './schema';
+import { greetingAudio, greetingText } from './greeting';
 
 export const threadId = (session: string) => `joe:${session}`;
 export const inFlight = new Map<string, Message>();
@@ -125,7 +126,8 @@ export async function conversationMessages(session: string): Promise<Message[]> 
     return [
       {
         ...ui,
-        text: displayText ?? text,
+        text: ui.kind === 'greeting' ? greetingText : displayText ?? text,
+        ...(ui.kind === 'greeting' ? { audioUrl: greetingAudio } : {}),
         status: ui.status === 'streaming' ? 'interrupted' : ui.status,
       },
     ];
