@@ -21,7 +21,7 @@ export function Dock({ level, timezone, visual, active, status, overview, onTime
         </Button>
         <span className="mx-1 h-6 w-px bg-white/15" aria-hidden="true" />
         <Button aria-label="卡片总览" aria-expanded={overview} onClick={onOverview} className={`${roundButton} ${overview ? 'bg-white/25' : 'bg-transparent'}`}><Icon name="grid" /></Button>
-        <Button aria-label={`打开对话，${status}`} title={status} onClick={onConversation} className="relative ml-1 size-10 shrink-0 overflow-hidden rounded-full outline-none focus-visible:brightness-125">
+        <Button aria-label={`打开对话，${status}`} title={status} onClick={onConversation} className="relative ml-1 size-10 shrink-0 overflow-hidden rounded-full outline-none">
           <span className="pointer-events-none absolute inset-2.5"><ThoughtOrb level={level} visual={visual} compact active={active} /></span>
         </Button>
       </nav>

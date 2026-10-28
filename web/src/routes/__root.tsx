@@ -39,7 +39,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="m-0 min-w-80 bg-[radial-gradient(ellipse_at_48%_43%,#10142d55,transparent_52%),linear-gradient(#05070e,#05070e)] before:pointer-events-none before:fixed before:inset-0 before:bg-[url('/noise.svg')] before:opacity-15 before:content-[''] [&_button]:cursor-pointer [&_button]:transition-[background,border-color,color,transform] [&_button]:duration-200 [&_button:hover]:-translate-y-px motion-reduce:[&_button]:transform-none motion-reduce:[&_button]:transition-none [&_button]:[-webkit-tap-highlight-color:transparent] [&_a]:[-webkit-tap-highlight-color:transparent] [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-offset-4 [&_button:focus-visible]:outline-[#afc3ff] [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-4 [&_a:focus-visible]:outline-[#afc3ff]">
+      <body className="m-0 min-w-80 bg-[radial-gradient(ellipse_at_48%_43%,#10142d55,transparent_52%),linear-gradient(#05070e,#05070e)] before:pointer-events-none before:fixed before:inset-0 before:bg-[url('/noise.svg')] before:opacity-15 before:content-[''] [&_button]:cursor-pointer [&_button]:transition-[background,border-color,color,transform] [&_button]:duration-200 [&_button:hover]:-translate-y-px motion-reduce:[&_button]:transform-none motion-reduce:[&_button]:transition-none [&_button]:[-webkit-tap-highlight-color:transparent] [&_a]:[-webkit-tap-highlight-color:transparent] [&,&_*]:border-0! [&,&_*]:outline-none! [&,&_*]:ring-0! [&,&_*]:ring-offset-0!">
         {children}
         <Scripts />
       </body>

@@ -79,7 +79,7 @@ const STRUCK: Stage[] = ["strike", "nudge", "settled"];
 const ACCENT_VAR = "--task-accent";
 const CARD =
   "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_3px_10px_rgba(0,0,0,0.06)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_6px_18px_rgba(0,0,0,0.09)] active:brightness-95 dark:bg-[#1F1F1F] dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_3px_10px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_1px_2px_rgba(0,0,0,0.45),0_6px_18px_rgba(0,0,0,0.4)] dark:active:brightness-110";
-const FOCUS = `outline-none focus-visible:ring-2 focus-visible:ring-[var(${ACCENT_VAR})] focus-visible:ring-offset-2`;
+const FOCUS = `outline-none`;
 
 export function useTiming() {
   const reduced = useReducedMotion() ?? false;
