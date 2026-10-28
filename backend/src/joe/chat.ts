@@ -197,21 +197,26 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         answer.status = 'complete';
       } catch (error) {
         native = collectNative?.() ?? native;
-        if (!signal.aborted)
-          console.error('Joe turn failed', {
-            turnId: input.turnId,
-            traceId,
-            name: error instanceof Error ? error.name : 'ProviderError',
-            status:
-              error && typeof error === 'object' && 'statusCode' in error ? error.statusCode : undefined,
-          });
-        answer.status = signal.aborted ? 'interrupted' : 'error';
-        emit('state', { state: signal.aborted ? 'interrupted' : 'error' });
-        if (!signal.aborted)
-          emit('error', {
-            message: `回答失败，请检查模型配置、余额或服务连接后重试。${traceId ? ` TraceID: ${traceId}` : ''}`,
-          });
-        store.usage(input.turnId, 'llm', model.id, null, null, null, answer.status);
+        const diagnostic = error && typeof error === 'object' && 'id' in error && error.id === 'STRUCTURED_OUTPUT_SCHEMA_VALIDATION_FAILED' && 'details' in error && error.details && typeof error.details === 'object' && 'value' in error.details ? error.details.value : undefined;
+        const plainText = typeof diagnostic === 'string' && diagnostic.trim() && !/^(?:undefined|null)$/.test(diagnostic.trim()) && !/^[\s]*[\[{`]/.test(diagnostic) && diagnostic.startsWith(answer.text) ? diagnostic : '';
+        if (!signal.aborted && plainText) {
+          update({ text: plainText });
+          answer.status = 'complete';
+          store.usage(input.turnId, 'llm', model.id, null, null, null);
+        } else {
+          if (!signal.aborted)
+            console.error('Joe turn failed', {
+              turnId: input.turnId,
+              traceId,
+              name: error instanceof Error ? error.name : 'ProviderError',
+              status:
+                error && typeof error === 'object' && 'statusCode' in error ? error.statusCode : undefined,
+            });
+          answer.status = signal.aborted ? 'interrupted' : 'error';
+          emit('state', { state: signal.aborted ? 'interrupted' : 'error' });
+          if (!signal.aborted) emit('error', { message: '回答暂时不可用，请重试。' });
+          store.usage(input.turnId, 'llm', model.id, null, null, null, answer.status);
+        }
       } finally {
         clearTimeout(slow);
         try {

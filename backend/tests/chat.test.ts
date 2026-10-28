@@ -118,6 +118,29 @@ test('configuration rejects duplicate models and negative rates', () => {
 function modelFrame(content: string) {
   return `data: ${JSON.stringify({ id: 'test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }] })}\n\n`;
 }
+test('plain text model output remains a usable answer', async () => {
+  const original = globalThis.fetch;
+  const requests: string[] = [];
+  globalThis.fetch = async (_url, init) => {
+    requests.push(String(init?.body));
+    return new Response(
+    modelFrame(requests.length === 1 ? '我暂时不能搜索视频。' : '{"expression":{"emotion":"calm","intensity":0.3},"text":"你好。"}') + 'data: {"id":"test","object":"chat.completion.chunk","created":1,"model":"openai/test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    { headers: { 'Content-Type': 'text/event-stream' } },
+    );
+  };
+  try {
+    const sessionId = store.session();
+    const events: any[] = [];
+    await readEvents(await chat({ sessionId, turnId: randomUUID(), text: '搜索视频', model: 'openai/test' }, new AbortController().signal), e => events.push(e));
+    assert.equal(events.at(-1).message.status, 'complete');
+    assert.equal(events.at(-1).message.text, '我暂时不能搜索视频。');
+    assert.equal((await conversationMessages(sessionId))[1].text, '我暂时不能搜索视频。');
+    const next: any[] = [];
+    await readEvents(await chat({ sessionId, turnId: randomUUID(), text: '继续', model: 'openai/test' }, new AbortController().signal), e => next.push(e));
+    assert.equal(next.at(-1).message.status, 'complete');
+    assert.match(requests[1], /我暂时不能搜索视频/);
+  } finally { globalThis.fetch = original; }
+});
 test('invalid structured output fails without leaking JSON into restored history', async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async () =>
@@ -136,10 +159,7 @@ test('invalid structured output fails without leaking JSON into restored history
     await readEvents(response, (e) => events.push(e));
     assert.equal(events.at(-1).message.status, 'error');
     const error = events.find((e) => e.type === 'error');
-    assert.match(error.message, /TraceID: [a-f0-9]+/);
-    const traceId = error.message.split('TraceID: ')[1];
-    await mastra.observability.flush();
-    assert.ok(await mastra.observability.getRecordedTrace({ traceId }));
+    assert.equal(error.message, '回答暂时不可用，请重试。');
     const history = await conversationMessages(sessionId);
     assert.equal(history.length, 2);
     assert.equal(history[1].status, 'error');
