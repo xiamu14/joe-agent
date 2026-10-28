@@ -15,6 +15,7 @@ export abstract class JoeVoice extends MastraVoice<unknown, VoiceOptions, VoiceO
       speaker: config.voiceId,
     });
   }
+  speakStream?(text: string, options: VoiceOptions & { speaker: string; language: 'en' | 'zh' }): Promise<Response>;
   createRealtimeSession?(signal: AbortSignal): Promise<{ mode: 'elevenlabs-realtime'; token: string }>;
   async getSpeakers() {
     return this.config.voiceId ? [{ voiceId: this.config.voiceId }] : [];

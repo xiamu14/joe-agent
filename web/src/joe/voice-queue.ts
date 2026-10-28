@@ -1,4 +1,5 @@
 import { jsonBody } from './api';
+import { playStreamedSpeech } from './streamed-speech-player';
 export class VoiceQueue {
   private epoch = 0;
   private queue: {
@@ -63,12 +64,22 @@ export class VoiceQueue {
             sessionId: item.sessionId,
             turnId: item.turnId,
             language: item.language,
+            stream: true,
           }),
           signal: this.request.signal,
         });
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
           throw new Error(data.error || '语音合成失败');
+        }
+        if (epoch !== this.epoch) { await response.body?.cancel(); break; }
+        if (response.headers.get('Content-Type')?.includes('application/x-ndjson')) {
+          this.unlock();
+          await playStreamedSpeech(response, this.context!, this.request.signal,
+            end => { if (epoch === this.epoch) this.onCaption(item.turnId, item.offset + end); },
+            value => this.onPlaying(value), value => this.onLevel(value));
+          if (epoch === this.epoch) this.onCaption(item.turnId, item.offset + item.text.length);
+          continue;
         }
         const blob = await response.blob();
         if (epoch !== this.epoch) break;

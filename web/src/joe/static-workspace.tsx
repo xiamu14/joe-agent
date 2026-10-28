@@ -12,8 +12,8 @@ import { createCanvasLayout } from './canvas-layout';
 
 export function StaticWorkspace() {
   const [view, setView] = useState(0);
-  const example = useJoe({ sessionKey: 'joe.canvas.example.session', voiceOutput: false });
-  const empty = useJoe({ sessionKey: 'joe.canvas.empty.session', voiceOutput: false });
+  const example = useJoe({ sessionKey: 'joe.canvas.example.session' });
+  const empty = useJoe({ sessionKey: 'joe.canvas.empty.session' });
   const joe = view === 0 ? example : empty;
   const [speech, setSpeech] = useState([false, false]);
   const onSpeakingChange = useCallback((playing: boolean) => {

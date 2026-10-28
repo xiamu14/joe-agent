@@ -28,7 +28,7 @@ export const voiceLanguageSchema = z.enum(['auto', 'en', 'zh']);
 export const settingsSchema = z.object({
   voice: z.boolean().default(true),
   defaultMuted: z.boolean().default(false),
-  voiceLanguage: voiceLanguageSchema.default('auto'),
+  voiceLanguage: voiceLanguageSchema.default('zh'),
   model: z.string().max(150).default(''),
   city: z.string().max(100).default(''),
   timezone: z

@@ -43,8 +43,8 @@ function conversation(user: string, answer: string, status = 'complete') {
   return { sessionId, turnId };
 }
 
-test('settings default to auto, persist a selected profile and reject invalid languages', () => {
-  assert.equal(settingsSchema.parse({}).voiceLanguage, 'auto');
+test('settings default to Chinese, persist a selected profile and reject invalid languages', () => {
+  assert.equal(settingsSchema.parse({}).voiceLanguage, 'zh');
   assert.equal(store.saveSettings({ voiceLanguage: 'zh' }).voiceLanguage, 'zh');
   assert.equal(store.settings().voiceLanguage, 'zh');
   assert.throws(() => settingsSchema.parse({ voiceLanguage: 'invalid' }));

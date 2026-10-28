@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotionValue } from 'motion/react';
 import { api, jsonBody } from './api';
 import { canvasSessionId } from './session-storage';
-import { readEvents, extractSentence } from './stream';
+import { readEvents, extractSpeech } from './stream';
 import { VoiceQueue } from './voice-queue';
+import { TextStream } from './text-stream';
 import type {
   Bootstrap,
   Message,
@@ -15,7 +16,8 @@ import type {
   Usage,
 } from './types';
 
-export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { sessionKey?: string; voiceOutput?: boolean } = {}) {
+export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolatedStream = false }: { sessionKey?: string; voiceOutput?: boolean; isolatedStream?: boolean } = {}) {
+  const textStream = useRef(new TextStream()).current;
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null),
     [messages, setMessages] = useState<Message[]>([]);
   const [greetingToPlay, setGreetingToPlay] = useState('');
@@ -93,6 +95,11 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
       (value) => {
         if (mounted.current) setVoicePending(value);
       },
+      (turnId, end) => {
+        if (!mounted.current || turn.current !== turnId) return;
+        setMessages(old => old.map(m => m.turnId === turnId && m.role === 'assistant'
+          ? { ...m, visibleText: (m.speechText || '').slice(0, end) } : m));
+      },
     );
     void connect(controller.signal);
     const poll = setInterval(() => void refreshUsage(), 30000);
@@ -104,10 +111,12 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
       uploadAbort.current?.abort();
       voice.current?.dispose();
       clearInterval(poll);
+      textStream.clear();
     };
   }, [connect, refreshUsage, level]);
   function stop() {
     const old = turn.current;
+    const streamed = textStream.snapshot();
     turn.current = '';
     abort.current?.abort();
     speechAbort.current?.abort();
@@ -117,7 +126,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
     setMessages((previous) =>
       previous.map((m) =>
         m.turnId === old && m.role === 'assistant'
-          ? { ...m, visibleText: undefined, status: m.status === 'complete' ? 'complete' : 'interrupted' }
+          ? { ...m, text: streamed.get(m.id) ?? m.text, visibleText: undefined, status: m.status === 'complete' ? 'complete' : 'interrupted' }
           : m,
       ),
     );
@@ -165,7 +174,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
     const id = crypto.randomUUID();
     turn.current = id;
     abort.current = new AbortController();
-    turnVoice.current = voiceOutput && Boolean(settingsRef.current?.voice);
+    turnVoice.current = voiceOutput && Boolean(settingsRef.current?.voice) && Boolean(bootstrap?.configured.tts);
     setBusy(true);
     setState('thinking');
     setError('');
@@ -183,7 +192,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
         assistantId = event.assistant.id;
         accepted = true;
         setAttachments([]);
-        setMessages((old) => [...old, event.user!, event.assistant!]);
+        setMessages((old) => [...old, event.user!, { ...event.assistant!, visibleText: turnVoice.current ? '' : undefined }]);
       }
       if (event.type === 'state' && event.state) setState(event.state);
       if (event.type === 'expression' && event.expression) {
@@ -195,7 +204,8 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
       if (event.type === 'sources')
         setMessages((old) => old.map((m) => (m.id === assistantId ? { ...m, sources: event.sources } : m)));
       if (event.type === 'text.delta' && event.text) {
-        setMessages((old) =>
+        if (isolatedStream && !turnVoice.current) textStream.append(assistantId, event.text);
+        else setMessages((old) =>
           old.map((m) => (m.id === assistantId ? { ...m, text: m.text + event.text } : m)),
         );
       }
@@ -258,7 +268,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
           let remaining = speech.text,
             offset = 0;
           while (remaining) {
-            const [next, rest] = extractSentence(remaining, true);
+            const [next, rest] = extractSpeech(remaining);
             if (next)
               voice.current?.enqueue(next, sessionId, id, offset + remaining.indexOf(next), speech.language);
             offset += remaining.length - rest.length;
@@ -267,6 +277,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
         } catch (error) {
           if (turn.current === id && !speechSignal.aborted) {
             setVoicePending(false);
+            setMessages(old => old.map(m => m.turnId === id ? { ...m, visibleText: undefined } : m));
             setError(error instanceof Error ? error.message : '语音准备失败');
           }
         }
@@ -279,7 +290,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
         setState('error');
         setMessages((old) =>
           old.map((m) =>
-            m.turnId === id && m.role === 'assistant' ? { ...m, visibleText: undefined, status: 'error' } : m,
+            m.turnId === id && m.role === 'assistant' ? { ...m, text: textStream.get(m.id) ?? m.text, visibleText: undefined, status: 'error' } : m,
           ),
         );
       }
@@ -327,6 +338,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
   }
   async function newSession() {
     stop();
+    textStream.clear();
     generation.current++;
     uploadAbort.current?.abort();
     setUploading(false);
@@ -345,6 +357,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true }: { ses
   }
   return {
     bootstrap,
+    textStream,
     greetingToPlay,
     acknowledgeGreeting: () => setGreetingToPlay(''),
     messages,

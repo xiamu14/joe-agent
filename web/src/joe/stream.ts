@@ -48,3 +48,14 @@ export function extractSentence(buffer: string, flush = false): [string, string]
     boundary >= 0 ? Math.min(boundary + 1, 240) : buffer.length >= 240 ? 240 : flush ? buffer.length : 0;
   return [buffer.slice(0, length).trim(), buffer.slice(length)];
 }
+
+export function extractSpeech(buffer: string): [string, string] {
+  let length = Math.min(buffer.length, 1200);
+  if (length < buffer.length) {
+    const boundary = [...buffer.slice(0, length).matchAll(/[。！？!?\n]|\.(?:\s|$)/g)].at(-1);
+    if (boundary) length = boundary.index + 1;
+    // Keep a surrogate pair together when a long sentence has no punctuation.
+    else if (/[\uD800-\uDBFF]/.test(buffer[length - 1])) length--;
+  }
+  return [buffer.slice(0, length).trim(), buffer.slice(length)];
+}

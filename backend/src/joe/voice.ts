@@ -31,6 +31,7 @@ const speechSchema = z.object({
   turnId: idSchema,
   text: z.string().trim().min(1).max(1200),
   language: z.enum(['en', 'zh']),
+  stream: z.boolean().default(false),
 });
 export async function synthesize(body: unknown, signal: AbortSignal) {
   const input = speechSchema.parse(body);
@@ -47,6 +48,10 @@ export async function synthesize(body: unknown, signal: AbortSignal) {
   const speaker = config.voices[input.language];
   if (!speaker) throw new Error(`尚未配置 ${input.language === 'en' ? 'English' : 'Chinese'} 音色`);
   try {
+    if (input.stream && provider.speakStream) return await provider.speakStream(input.text, {
+      speaker, language: input.language,
+      signal: AbortSignal.any([signal, AbortSignal.timeout(60000)]),
+    });
     const result = await provider.speak(input.text, {
       speaker,
       signal: AbortSignal.any([signal, AbortSignal.timeout(60000)]),

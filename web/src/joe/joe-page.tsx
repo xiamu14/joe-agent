@@ -21,7 +21,7 @@ import { agentVisual } from './visual';
 const panelBody = 'mr-1 h-full overflow-y-auto overscroll-contain';
 
 export function JoePage() {
-  const joe = useJoe();
+  const joe = useJoe({ isolatedStream: true });
   const voice = useVoiceInput(joe);
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [overview, setOverview] = useState(false);
@@ -51,7 +51,7 @@ export function JoePage() {
               <span>{joe.state === 'offline' ? '服务未连接' : '等待模型配置'}</span>
               <Button className="rounded-lg px-2 py-1 text-white" onClick={() => void joe.reconnect()}>重新连接</Button>
             </div>}
-            <MessageList key={`messages-${joe.sessionId}`} messages={joe.messages} />
+            <MessageList key={`messages-${joe.sessionId}`} messages={joe.messages} textStream={joe.textStream} />
             {joe.error && <div role="alert" className="mx-5 mb-3 flex items-start gap-3 rounded-2xl bg-black/15 p-3 text-xs leading-5">
               <span className="flex-1">{joe.error}</span><Button aria-label="关闭提示" onClick={() => joe.setError('')}><Icon name="close" className="size-4" /></Button>
             </div>}

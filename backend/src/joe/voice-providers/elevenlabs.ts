@@ -38,6 +38,21 @@ export class ElevenLabsVoice extends JoeVoice {
     // Word timestamps omit trailing silence and are not a reliable billing duration.
     return z.object({ text: z.string().max(12000) }).parse(await response.json()).text;
   }
+  async speakStream(text: string, options: VoiceOptions & { speaker: string; language: 'en' | 'zh' }) {
+    const response = await checked(await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(options.speaker)}/stream/with-timestamps?output_format=pcm_24000`,
+      {
+        method: 'POST',
+        headers: { 'xi-api-key': this.config.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, model_id: this.config.ttsModel, language_code: options.language }),
+        signal: options.signal,
+      },
+    ), this.config.label);
+    if (!response.body) throw new Error('语音服务没有返回音频');
+    return new Response(response.body, {
+      headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Audio-Sample-Rate': '24000' },
+    });
+  }
   async speak(input: string | NodeJS.ReadableStream, options: VoiceOptions & { speaker?: string } = {}) {
     const config = {
       ...this.config,
