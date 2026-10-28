@@ -6,6 +6,7 @@ import { browserSpeechAvailable, startBrowserSpeech } from './voice-input/browse
 
 export function useDictation(sessionId: string, onText: (text: string) => void) {
   const [state, setState] = useState<'idle' | 'connecting' | 'recording' | 'transcribing'>('idle');
+  const [inputStream, setInputStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState('');
   const [browserSupported, setBrowserSupported] = useState(false);
@@ -15,14 +16,17 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
   const onTextRef = useRef(onText);
   onTextRef.current = onText;
   useEffect(() => { setBrowserSupported(browserSpeechAvailable()); }, []);
-  useEffect(() => () => { current.current++; cancelCurrent.current?.(); }, [sessionId]);
+  useEffect(() => {
+    setState('idle'); setPreview(''); setInputStream(null);
+    return () => { current.current++; cancelCurrent.current?.(); };
+  }, [sessionId]);
 
   async function start() {
     const token = ++current.current;
     const abort = new AbortController();
     let stream: MediaStream | undefined, context: AudioContext | undefined;
     let capture: ReturnType<typeof startDictation> | undefined;
-    const release = () => { stream?.getTracks().forEach(track => track.stop()); void context?.close().catch(() => {}); };
+    const release = () => { setInputStream(value => value === stream ? null : value); stream?.getTracks().forEach(track => track.stop()); void context?.close().catch(() => {}); };
     cancelCurrent.current = () => { abort.abort(); capture?.cancel(); release(); };
     stopCurrent.current = () => {
       if (capture) capture.finish();
@@ -44,6 +48,7 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('录音不可用');
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
       if (token !== current.current) { release(); return; }
+      setInputStream(stream);
       context = new AudioContext();
       await context.resume();
       if (token !== current.current) { release(); return; }
@@ -68,5 +73,5 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
     }
   }
   const cancel = () => { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); };
-  return { state, error, preview, setPreview, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
+  return { state, inputStream, error, preview, setPreview, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
 }

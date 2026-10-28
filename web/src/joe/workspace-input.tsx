@@ -1,6 +1,8 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'motion/react';
 import { ArrowUp, Mic, Paperclip } from 'lucide-react';
+import { VoiceWave } from './voice-wave';
+import { useVoiceLevel } from './use-voice-level';
 import { useDictation } from './use-dictation';
 import { api, jsonBody } from './api';
 
@@ -19,6 +21,7 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
   const [submitting, setSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const recording = voice.state === 'recording' || voice.state === 'connecting';
+  const level = useVoiceLevel(voice.state === 'recording', voice.inputStream);
   const preview = voice.preview ? `${text && !/\s$/.test(text) ? ' ' : ''}${voice.preview}` : '';
   const canSend = ready && !busy && !submitting && Boolean((text + preview).trim());
   async function submit() {
@@ -43,6 +46,7 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
       <motion.textarea value={`${text}${preview}`.slice(0, 12000)} onChange={event => { const value = event.target.value; if (preview && value.endsWith(preview)) onTextChange(value.slice(0, -preview.length)); else { onTextChange(value); voice.setPreview(''); } }} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void submit(); } }} rows={2} aria-label="消息" placeholder="有什么想和我分享的吗？" maxLength={12000} className="w-full min-w-0 resize-none border-0 bg-transparent p-0 text-sm leading-6 tracking-wider text-white outline-none placeholder:text-[#8d8d8d] sm:text-base" />
       <motion.div className="flex w-full items-center justify-between">
         <motion.button type="button" disabled aria-label="添加附件" className={iconButton}><Paperclip size={14} strokeWidth={1.75} /></motion.button>
+        <VoiceWave active={recording} level={level} />
         <motion.div className="flex shrink-0 items-center gap-2">
           <motion.button type="button" disabled={!(voiceReady || (sessionId && voice.browserSupported)) || busy || submitting || voice.state === 'transcribing'} onClick={voice.toggle} aria-label={recording ? '结束录音' : '开始录音'} aria-pressed={recording} whileTap={{ scale: 0.95 }} className={`${iconButton} ${recording ? 'bg-[#FC4C01]' : ''} disabled:opacity-40`}><Mic size={14} strokeWidth={1.75} /></motion.button>
           <motion.button type="button" disabled={!canSend} onClick={() => void submit()} aria-label="发送消息" whileTap={{ scale: 0.95 }} className={`${iconButton} enabled:bg-[#FC4C01] disabled:opacity-40`}><ArrowUp size={14} strokeWidth={canSend ? 3 : 1.75} /></motion.button>
