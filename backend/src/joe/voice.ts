@@ -5,6 +5,7 @@ import { store } from './store';
 import { idSchema } from './schema';
 import { voiceError } from './voice-errors';
 import { getVoiceProvider } from './voice-providers';
+import { supportedTranscript } from './input-language';
 
 // Application layer owns validation, sessions, cancellation and accounting.
 export async function transcribe(form: FormData, signal: AbortSignal) {
@@ -20,7 +21,7 @@ export async function transcribe(form: FormData, signal: AbortSignal) {
     const text = await provider.listen(audio, {
       signal: AbortSignal.any([signal, AbortSignal.timeout(90000)]),
     });
-    return { text };
+    return { text: form.get('supportedLanguages') === 'zh,en' ? await supportedTranscript(typeof text === 'string' ? text : '', signal) : text };
   } catch (error) {
     throw voiceError(error, '语音识别', config.label);
   }

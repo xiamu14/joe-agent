@@ -54,7 +54,7 @@ export function StaticWorkspace() {
                   </motion.div>
               )}
             </motion.div>
-            <WorkspaceInput text={drafts[view]} onTextChange={setDraft} onSend={joe.send} ready={Boolean(joe.sessionId)} busy={joe.busy} />
+            <WorkspaceInput key={`${view}-${joe.sessionId}`} text={drafts[view]} onTextChange={setDraft} onSend={joe.send} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} />
           </motion.section>
           <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} orbState={view === 0 ? orbState : undefined} />
         </motion.div>

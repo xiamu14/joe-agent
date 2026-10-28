@@ -12,6 +12,7 @@ import { syncUsage } from './usage-sync';
 import { currentWeather } from './weather';
 import { conversationMessages } from './conversations';
 import { mastraStorage } from './memory';
+import { supportedTranscript } from './input-language';
 
 const allowedOrigins = new Set(
   (process.env.JOE_WEB_ORIGINS || 'http://127.0.0.1:5173,http://localhost:5173').split(','),
@@ -127,6 +128,11 @@ export const routes = [
   route('/transcribe', 'POST', async (c) =>
     c.json(await transcribe(await form(c, 13 * 1024 * 1024), c.req.raw.signal)),
   ),
+  route('/validate-transcript', 'POST', async (c) => {
+    const input = z.object({ sessionId: idSchema, text: z.string().max(12000) }).parse(await json(c));
+    store.requireSession(input.sessionId);
+    return c.json({ text: await supportedTranscript(input.text, c.req.raw.signal) });
+  }),
   route('/attachments', 'POST', async (c) => {
     const data = await form(c, 1024 * 1024 + 8192);
     const session = idSchema.parse(data.get('sessionId'));
