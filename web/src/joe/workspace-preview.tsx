@@ -58,7 +58,6 @@ export function CanvasPreview({ layout }: { layout: CanvasLayout }) {
         <motion.h2 className="mb-5 text-[29px] max-sm:text-[23px] leading-tight font-medium tracking-tight">好想法，<motion.span className="block">慢慢落地。</motion.span></motion.h2>
         <TaskList size="sm" accent="#343a20" defaultTasks={[{ id: 'gather', label: '收集灵感', done: true }, { id: 'sort', label: '理清思路' }, { id: 'start', label: '开始动手' }]} className="[&_[data-slot=task-item]]:bg-black/5! [&_[data-slot=task-item]]:text-[#343a20]! [&_[data-slot=task-item]]:shadow-none! [&_[data-slot=task-item]_span]:text-[#343a20]! [&_[data-state=checked]_span]:text-[#343a20]/40!" />
       </TiltCard>
-      <motion.button type="button" onClick={pan.reset} disabled={Boolean(scene.selection)} aria-label="画布归位" className="absolute bottom-3 right-3 z-200 rounded-full bg-[#242424] px-4 py-2 text-xs text-white/65 disabled:opacity-30" whileTap={{ scale: 0.95 }}>归位</motion.button>
     </motion.div>
     </CanvasSceneContext>
   );

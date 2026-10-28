@@ -53,7 +53,6 @@ export function StaticWorkspace() {
               <motion.h2 className="text-sm font-medium">对话</motion.h2>
               <motion.span className="font-mono text-[10px] tracking-widest text-white/25">04</motion.span>
             </motion.div>
-            <motion.p className="mb-6 text-[10px] tracking-widest text-white/25">今天</motion.p>
             <motion.div className="min-h-0 flex-1 overflow-y-auto pb-4">
               <Faq items={conversations} defaultValue="start" accent="#7252e8" avatar={null} className="gap-4 [&_[data-slot=faq-question]]:bg-[#262626]! [&_[data-slot=faq-question]]:text-[13px] [&_[data-slot=faq-question]]:text-white/80! [&_[data-slot=faq-question]]:shadow-none! [&_[role=region]]:text-[13px] [&_[role=region]]:leading-6" />
             </motion.div>

@@ -18,7 +18,6 @@ export function useCanvasPan(scene: CanvasScene) {
       animate(scene.panY, y, { type: 'spring', stiffness: 240, damping: 28 });
     }
   }
-  function reset() { if (!scene.selection) moveTo(0, 0); }
   function down(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 || !event.isPrimary) return;
     suppressClick.current = false;
@@ -56,8 +55,7 @@ export function useCanvasPan(scene: CanvasScene) {
   function key(event: KeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget || scene.selection) return;
     const direction: Record<string, [number, number]> = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
-    if (event.key === 'Home') { event.preventDefault(); reset(); }
-    else if (direction[event.key]) {
+    if (direction[event.key]) {
       event.preventDefault();
       const [x, y] = direction[event.key];
       moveTo(scene.panX.get() + x, scene.panY.get() + y);
@@ -74,5 +72,5 @@ export function useCanvasPan(scene: CanvasScene) {
       scene.panX.set(-scene.layout[id].x); scene.panY.set(-scene.layout[id].y);
     }
   }
-  return { dragging, reset, down, move, finish, click, key, focus };
+  return { dragging, down, move, finish, click, key, focus };
 }
