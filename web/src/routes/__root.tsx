@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { name: 'theme-color', content: '#05070e' },
-      { title: 'Joe · 思绪的形状' },
+      { title: 'Joe.全能情绪伙伴' },
       { name: 'description', content: 'Joe — 以声音连接，以思绪回应。一个可感知的 AI 对话界面。' },
     ],
     links: [
