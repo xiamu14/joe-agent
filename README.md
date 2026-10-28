@@ -4,13 +4,14 @@ Joe 是以语音为主要交互方式的本地单用户 AI Agent。Web 使用 Re
 
 ## 启动与配置
 
-推荐 Node.js 24。两个子项目分别安装依赖：
+使用 Bun 1.3.14 或更新版本管理依赖与脚本，应用运行仍需 Node.js（推荐 24）。在根目录一次安装前后端依赖：
 
 ```sh
-npm --prefix web ci
-npm --prefix backend ci
+bun install
 cp backend/.env.example backend/.env
 ```
+
+前后端通过 workspaces 管理，共用根目录的 `bun.lock`。CI 安装使用 `bun install --frozen-lockfile`。
 
 在 `backend/.env` 填写：
 
@@ -22,10 +23,10 @@ cp backend/.env.example backend/.env
 在根目录同时启动 Web 与后端：
 
 ```sh
-npm run dev
+bun run dev
 ```
 
-按 Ctrl+C 同时停止两个服务；也可分别使用 `npm run dev:web` 和 `npm run dev:backend`。
+按 Ctrl+C 同时停止两个服务；也可分别使用 `bun run dev:web` 和 `bun run dev:backend`。
 
 - 正式会话：<http://127.0.0.1:5173/joe>
 - 原视觉预览：<http://127.0.0.1:5173/preview>，根路由仍跳转到预览。
@@ -35,7 +36,7 @@ npm run dev
 
 ## 会话与语音
 
-`/joe` 采用固定图片背景与中性磨砂卡片，默认对话为主、费用为次。底部常驻时间、卡片总览和 Joe 小球入口；首版含对话、费用、时间和设置四类卡片。点击次卡片或左右滑动交换主次，窄屏只显示主卡片。详细规则见 [交互设计](docs/interaction-design.md)。
+`/joe-legcy` 采用固定图片背景与中性磨砂卡片，默认对话为主、费用为次。底部常驻时间、卡片总览和 Joe 小球入口；首版含对话、费用、时间和设置四类卡片。点击次卡片或左右滑动交换主次，窄屏只显示主卡片。详细规则见 [交互设计](docs/interaction-design.md)。
 
 - 文字通过 AI SDK UI Message SSE 流式返回，AI 在左，用户在右。Mastra Memory 统一保存消息、来源和情绪元数据；Joe SQLite 保存会话注册、设置、附件和用量，浏览器保存当前会话 ID。
 - 语音回答默认开启。回答完成后按语音配置准备播报文本，再按短句送对应音色的 TTS，逐句合成和播放，实际音频 RMS 驱动粒子强度；这是短句队列播放，不是双向实时音频流。
@@ -93,9 +94,9 @@ Joe 不包含 Zendocs 的文档扫描或索引实现。配置 `ZENDOCS_SEARCH_UR
 ## 验证与部署边界
 
 ```sh
-npm test
-npm run typecheck
-npm run build
+bun run test
+bun run typecheck
+bun run build
 ```
 
 测试覆盖视觉状态、情绪头解析、UTF-8 流拆包/中断、语音分句、SQLite 恢复与附件隔离、用量去重、模型配置，以及使用模拟 OpenRouter 响应的真实 Mastra 适配器链路。测试不调用付费供应商。脚本同时检查所有现有及新增源文件不超过 500 行（排除依赖和生成构建产物）。
@@ -104,7 +105,7 @@ npm run build
 
 后端只绑定 loopback，并校验 Host / Origin；当前为本地单用户服务，无公网认证。开发时 Vite 将 `/joe-api` 代理到 Mastra。生产构建后须由同源反向代理把 `/joe-api/*` 转发到后端（关闭流缓冲），并配置允许的 Origin；不能仅发布 Web 静态文件就认为服务端已接通。公网或多人使用需另行实现认证与数据隔离。
 
-Web 输出在 `web/dist`，后端输出在 `backend/.mastra/output`；后端可用 `npm --prefix backend start` 启动。Three.js 构建块仍有大于 500KB 的体积提示，未影响构建成功。
+Web 输出在 `web/dist`，后端输出在 `backend/.mastra/output`；后端可用 `bun run --cwd backend start` 启动。Three.js 构建块仍有大于 500KB 的体积提示，未影响构建成功。
 
 ## 语音 Provider 切换
 
@@ -147,7 +148,7 @@ Fish Provider 保留文件转写，使用本地能量检测决定说话结束，
 - Working Memory：启用 resource 范围，本地单用户固定为 `joe-local-user`，跨 session 保存用户明确表达的长期偏好。新会话的对话历史独立，但可以使用同一用户的长期偏好。此设计不适用于未经隔离的多人服务。
 - 语义召回与 Observational Memory 暂未启用，不额外调用 embedding 或后台摘要模型。自动标题生成也关闭。
 
-`npm run dev` 先启动后端，等待 `/joe-api/health` 确认 Joe 服务与持久化存储就绪，再启动 Web，避免首次启动时代理提前连接 4111 而出现 ECONNREFUSED。健康检查最多等待 60 秒，启动失败会停止子进程并提示。单独运行 Web、后端停机或热重载窗口内仍可能发生短暂连接拒绝；此时应检查后端是否在监听 4111，而非检查语音 API Key。
+`bun run dev` 先启动后端，等待 `/joe-api/health` 确认 Joe 服务与持久化存储就绪，再启动 Web，避免首次启动时代理提前连接 4111 而出现 ECONNREFUSED。健康检查最多等待 60 秒，启动失败会停止子进程并提示。单独运行 Web、后端停机或热重载窗口内仍可能发生短暂连接拒绝；此时应检查后端是否在监听 4111，而非检查语音 API Key。
 
 ## Mastra 原生能力整合
 

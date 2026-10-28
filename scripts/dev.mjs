@@ -15,7 +15,7 @@ function stop(code) {
   for (const child of children) {
     if (!child.pid) continue;
     try {
-      // Stop the entire npm process group, including Vite and Mastra.
+      // Stop the entire Bun process group, including Vite and Mastra.
       process.kill(-child.pid, 'SIGTERM');
     } catch (error) {
       if (error.code !== 'ESRCH') console.error(error.message);
@@ -27,7 +27,7 @@ process.on('SIGINT', () => stop(0));
 process.on('SIGTERM', () => stop(0));
 
 function start(service) {
-  const child = spawn('npm', ['run', `dev:${service}`], {
+  const child = spawn('bun', ['run', `dev:${service}`], {
     cwd,
     stdio: 'inherit',
     detached: true,

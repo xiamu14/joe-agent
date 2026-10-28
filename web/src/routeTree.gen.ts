@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JoeRouteImport } from './routes/joe'
+import { Route as JoeLegcyRouteImport } from './routes/joe-legcy'
 import { Route as PreviewRouteImport } from './routes/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const JoeRoute = JoeRouteImport.update({
   path: '/joe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoeLegcyRoute = JoeLegcyRouteImport.update({
+  id: '/joe-legcy',
+  path: '/joe-legcy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -32,30 +38,34 @@ const PreviewRoute = PreviewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
+  '/joe-legcy': typeof JoeLegcyRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
+  '/joe-legcy': typeof JoeLegcyRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
+  '/joe-legcy': typeof JoeLegcyRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/joe' | '/preview'
+  fullPaths: '/' | '/joe' | '/joe-legcy' | '/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/joe' | '/preview'
-  id: '__root__' | '/' | '/joe' | '/preview'
+  to: '/' | '/joe' | '/joe-legcy' | '/preview'
+  id: '__root__' | '/' | '/joe' | '/joe-legcy' | '/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JoeRoute: typeof JoeRoute
+  JoeLegcyRoute: typeof JoeLegcyRoute
   PreviewRoute: typeof PreviewRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/joe-legcy': {
+      id: '/joe-legcy'
+      path: '/joe-legcy'
+      fullPath: '/joe-legcy'
+      preLoaderRoute: typeof JoeLegcyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview': {
       id: '/preview'
       path: '/preview'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JoeRoute: JoeRoute,
+  JoeLegcyRoute: JoeLegcyRoute,
   PreviewRoute: PreviewRoute,
 }
 export const routeTree = rootRouteImport

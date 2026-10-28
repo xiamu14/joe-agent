@@ -1,6 +1,8 @@
-# Rare UI FluidOrb
+# Rare UI components
 
 The fluid shader in `web/src/orb-shaders.js` is adapted from [Rare UI FluidOrb](https://www.rareui.com/components/fluidorb), with the original fluid field and color bands. Rendering uses the existing Three.js lifecycle, and the circular edge uses defined smoothstep bounds.
+
+The static workspace also uses the official [FAQ](https://www.rareui.com/components/faq), [Fluid Orb](https://www.rareui.com/components/fluidorb), [Bounce Sidebar](https://www.rareui.com/components/bouncesidebar), and [Task List](https://www.rareui.com/components/tasklist) sources in `web/src/components/rare-ui/`. Import paths and the Next.js link were adapted to this React application; Task List was split into two files.
 
 MIT + Commons Clause License Condition v1.0 + Attribution
 
