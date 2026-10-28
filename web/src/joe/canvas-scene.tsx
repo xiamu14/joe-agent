@@ -1,25 +1,33 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { useMotionValue } from 'motion/react';
+import type { CanvasSnapshot } from './canvas-storage';
 import type { CanvasCardId, CanvasLayout } from './canvas-layout';
 
 type Selection = { id: CanvasCardId; expanded: boolean } | null;
 
-export function useCanvasSceneState(layout: CanvasLayout) {
+export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnapshot['pan'], onSave: (snapshot: CanvasSnapshot) => void) {
   const canvas = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Selection>(null);
   const [hovered, setHovered] = useState<CanvasCardId | null>(null);
-  const panX = useMotionValue(0);
-  const panY = useMotionValue(0);
+  const [dragging, setDragging] = useState<CanvasCardId | null>(null);
+  const suppressClick = useRef(false);
+  const panX = useMotionValue(initialPan.x);
+  const panY = useMotionValue(initialPan.y);
+  const save = useCallback(() => onSave({ version: 1, cards: layout, pan: { x: panX.get(), y: panY.get() } }), [layout, onSave, panX, panY]);
+  const moveCard = useCallback((id: CanvasCardId, position: { x: number; y: number }) => {
+    onSave({ version: 1, cards: { ...layout, [id]: { ...layout[id], ...position } }, pan: { x: panX.get(), y: panY.get() } });
+  }, [layout, onSave, panX, panY]);
   const open = useCallback((id: CanvasCardId) => {
+    if (dragging) return;
     panX.stop(); panY.stop();
     setHovered(null);
     setSelection(current => current ?? { id, expanded: true });
-  }, [panX, panY]);
+  }, [panX, panY, dragging]);
   const close = useCallback(() => setSelection(current => current ? { ...current, expanded: false } : current), []);
   const finishClose = useCallback((id: CanvasCardId) => {
     setSelection(current => current?.id === id && !current.expanded ? null : current);
   }, []);
-  return { canvas, layout, selection, hovered, setHovered, panX, panY, open, close, finishClose };
+  return { canvas, layout, selection, hovered, dragging, setDragging, suppressClick, save, moveCard, setHovered, panX, panY, open, close, finishClose };
 }
 
 export type CanvasScene = ReturnType<typeof useCanvasSceneState>;

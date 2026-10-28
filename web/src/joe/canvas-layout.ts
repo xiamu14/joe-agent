@@ -9,7 +9,7 @@ export function createCanvasLayout(seed: number): CanvasLayout {
     value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
     return value / 4294967296;
   };
-  const cells = [{ x: -300, y: -210 }, { x: 300, y: -210 }, { x: -300, y: 210 }, { x: 300, y: 210 }];
+  const cells = [{ x: -220, y: -155 }, { x: 220, y: -155 }, { x: -220, y: 155 }, { x: 220, y: 155 }];
   for (let i = cells.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [cells[i], cells[j]] = [cells[j], cells[i]];
@@ -20,8 +20,9 @@ export function createCanvasLayout(seed: number): CanvasLayout {
   return Object.fromEntries(cardIds.map((id, i) => [id, { x: points[i].x - center.x, y: points[i].y - center.y, rotation: -5 + random() * 15 }])) as CanvasLayout;
 }
 
-export function cardLayer(id: CanvasCardId, selected: CanvasCardId | null, hovered: CanvasCardId | null) {
+export function cardLayer(id: CanvasCardId, selected: CanvasCardId | null, hovered: CanvasCardId | null, dragged: CanvasCardId | null = null) {
   if (id === selected) return 100;
+  if (!selected && id === dragged) return 60;
   if (!selected && id === hovered) return 30;
   return cardIds.indexOf(id) + 1;
 }

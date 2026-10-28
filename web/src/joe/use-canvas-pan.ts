@@ -7,19 +7,19 @@ import { cardControls } from './card-expansion';
 export function useCanvasPan(scene: CanvasScene) {
   const reduced = useReducedMotion();
   const pointer = useRef<{ id: number; x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
-  const suppressClick = useRef(false);
+  const suppressClick = scene.suppressClick;
   const [dragging, setDragging] = useState(false);
 
   function moveTo(x: number, y: number) {
     scene.panX.stop(); scene.panY.stop();
-    if (reduced) { scene.panX.set(x); scene.panY.set(y); }
+    if (reduced) { scene.panX.set(x); scene.panY.set(y); scene.save(); }
     else {
       animate(scene.panX, x, { type: 'spring', stiffness: 240, damping: 28 });
-      animate(scene.panY, y, { type: 'spring', stiffness: 240, damping: 28 });
+      animate(scene.panY, y, { type: 'spring', stiffness: 240, damping: 28, onComplete: scene.save });
     }
   }
   function down(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || !event.isPrimary) return;
+    if (event.button !== 0 || !event.isPrimary || scene.dragging) return;
     suppressClick.current = false;
     if ((event.target as Element).closest(`[data-card], ${cardControls}`)) return;
     scene.panX.stop(); scene.panY.stop();
@@ -41,6 +41,7 @@ export function useCanvasPan(scene: CanvasScene) {
   }
   function finish(event: PointerEvent<HTMLDivElement>) {
     if (pointer.current?.id !== event.pointerId) return;
+    if (pointer.current.moved && !scene.selection) scene.save();
     pointer.current = null;
     setDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
@@ -53,7 +54,7 @@ export function useCanvasPan(scene: CanvasScene) {
     }
   }
   function key(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget || scene.selection) return;
+    if (event.target !== event.currentTarget || scene.selection || scene.dragging) return;
     const direction: Record<string, [number, number]> = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
     if (direction[event.key]) {
       event.preventDefault();
@@ -63,13 +64,14 @@ export function useCanvasPan(scene: CanvasScene) {
   }
   function focus(event: FocusEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
-    if (scene.selection || !target.matches(':focus-visible')) return;
+    if (scene.selection || scene.dragging || !target.matches(':focus-visible')) return;
     const id = target.closest<HTMLElement>('[data-card]')?.dataset.card as CanvasCardId | undefined;
     if (!id) return;
     const r = target.getBoundingClientRect(), viewport = event.currentTarget.getBoundingClientRect();
     if (r.left < viewport.left || r.right > viewport.right || r.top < viewport.top || r.bottom > viewport.bottom) {
       scene.panX.stop(); scene.panY.stop();
       scene.panX.set(-scene.layout[id].x); scene.panY.set(-scene.layout[id].y);
+      scene.save();
     }
   }
   return { dragging, down, move, finish, click, key, focus };

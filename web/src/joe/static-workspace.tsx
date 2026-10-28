@@ -7,7 +7,8 @@ import { useJoe } from './use-joe';
 import { Shdr01 } from '../components/shader-orb/shdr-01';
 import { CanvasPreview } from './workspace-preview';
 import { WorkspaceInput } from './workspace-input';
-import { createCanvasLayout, type CanvasLayout } from './canvas-layout';
+import { loadCanvas, saveCanvas, type CanvasSnapshot } from './canvas-storage';
+import { createCanvasLayout } from './canvas-layout';
 
 export function StaticWorkspace() {
   const [view, setView] = useState(0);
@@ -21,8 +22,9 @@ export function StaticWorkspace() {
   const orbState = workspaceOrbState(joe.state, joe.busy, speech[view] || joe.playing);
   const [drafts, setDrafts] = useState(['', '']);
   const setDraft = (text: SetStateAction<string>) => setDrafts(previous => previous.map((draft, index) => index === view ? typeof text === 'function' ? text(draft) : text : draft));
-  const [layout, setLayout] = useState<CanvasLayout | null>(null);
-  useEffect(() => { setLayout(createCanvasLayout(crypto.getRandomValues(new Uint32Array(1))[0])); }, []);
+  const [snapshot, setSnapshot] = useState<CanvasSnapshot | null>(null);
+  const rememberCanvas = useCallback((value: CanvasSnapshot) => { setSnapshot(value); saveCanvas(value); }, []);
+  useEffect(() => { const value = loadCanvas(createCanvasLayout(crypto.getRandomValues(new Uint32Array(1))[0])); setSnapshot(value); saveCanvas(value); }, []);
   return (
     <MotionConfig reducedMotion="user" transition={{ type: 'spring', stiffness: 240, damping: 28 }}>
       <motion.main className="relative min-h-dvh overflow-x-hidden bg-[#090909] p-5 text-[#f5f5f3] [color-scheme:dark] sm:p-8 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden" aria-label="Joe 工作空间">
@@ -43,7 +45,7 @@ export function StaticWorkspace() {
           <motion.section className="flex min-h-0 flex-col lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid lg:grid-rows-subgrid" aria-label="画布与输入">
             <motion.div className="relative flex min-h-[540px] flex-1 items-center justify-center lg:min-h-0" aria-label="画布">
               <AnimatePresence mode="wait" initial={false}>
-                {view === 0 ? layout && <CanvasPreview key="preview" layout={layout} /> : (
+                {view === 0 ? snapshot && <CanvasPreview key="preview" layout={snapshot.cards} initialPan={snapshot.pan} onSave={rememberCanvas} /> : (
                   <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex h-full w-full items-center justify-center pb-10">
                     <Shdr01 size={280} state={orbState} className="max-h-full max-w-full" ariaLabel={`SHDR-01 光球 · ${orbState}`} />
 

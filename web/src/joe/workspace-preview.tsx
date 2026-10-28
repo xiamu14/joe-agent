@@ -7,10 +7,11 @@ import { WeatherCard } from './weather/weather-card';
 import { YouTubeCard } from './video/youtube-card';
 import { CanvasSceneContext, useCanvasSceneState } from './canvas-scene';
 import { useCanvasPan } from './use-canvas-pan';
+import type { CanvasSnapshot } from './canvas-storage';
 import type { CanvasLayout } from './canvas-layout';
 
-export function CanvasPreview({ layout }: { layout: CanvasLayout }) {
-  const scene = useCanvasSceneState(layout);
+export function CanvasPreview({ layout, initialPan, onSave }: { layout: CanvasLayout; initialPan: CanvasSnapshot['pan']; onSave: (snapshot: CanvasSnapshot) => void }) {
+  const scene = useCanvasSceneState(layout, initialPan, onSave);
   const pan = useCanvasPan(scene);
   useEffect(() => {
     if (!scene.selection?.expanded) return;

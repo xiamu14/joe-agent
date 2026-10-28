@@ -3,6 +3,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Icon } from '../components/workspace/icon';
 import { cardTilt } from './card-tilt';
 import { cardControls } from './card-expansion';
+import { useCardDrag } from './use-card-drag';
 import { useCardFlip } from './use-card-flip';
 import { useCanvasScene } from './canvas-scene';
 import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
@@ -29,9 +30,10 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   const { controls, reduced, layoutExpanded, flipping, rememberFocus } = useCardFlip(expanded, card, onClosed);
   const x = useMotionValue(0), y = useMotionValue(0);
   const rotateX = useSpring(x, spring), rotateY = useSpring(y, spring);
-  const panX = useTransform(() => layoutExpanded ? 0 : scene.panX.get());
-  const panY = useTransform(() => layoutExpanded ? 0 : scene.panY.get());
-  const active = scene.hovered === id && !reduced && !selected && !blocked;
+  const drag = useCardDrag(id, scene, Boolean(scene.selection) || flipping, reset);
+  const panX = useTransform(() => layoutExpanded ? 0 : scene.panX.get() + drag.dx.get());
+  const panY = useTransform(() => layoutExpanded ? 0 : scene.panY.get() + drag.dy.get());
+  const active = scene.hovered === id && !reduced && !selected && !blocked && !scene.dragging;
   const position = scene.layout[id];
   useEffect(() => {
     if (!expanded) return;
@@ -57,8 +59,8 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
 
   return (
     <motion.article ref={card} tabIndex={-1} inert={blocked} data-card={id}
-      className={`absolute ${className} ${selected ? 'cursor-auto' : 'cursor-pointer'} outline-none [perspective:1000px]`}
-      aria-label={label} data-expanded={expanded || layoutExpanded} data-flipping={flipping}
+      className={`absolute ${className} ${selected ? 'cursor-auto' : scene.dragging === id ? 'cursor-grabbing select-none touch-none' : 'cursor-grab select-none touch-none'} outline-none [perspective:1000px]`}
+      aria-label={label} data-expanded={expanded || layoutExpanded} data-flipping={flipping} data-dragging={scene.dragging === id || undefined}
       style={{
         left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
         top: layoutExpanded ? '50%' : `calc(50% + ${position.y}px)`,
@@ -67,19 +69,20 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
         maxHeight: layoutExpanded ? '100cqh' : undefined,
         translate: '-50% -50%',
         x: panX, y: panY,
-        zIndex: cardLayer(id, scene.selection?.id ?? null, scene.hovered),
+        zIndex: cardLayer(id, scene.selection?.id ?? null, scene.hovered, scene.dragging),
       }}
       onHoverStart={event => {
-        if (!reduced && !selected && !blocked && event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scene.setHovered(id);
+        if (!reduced && !selected && !blocked && !scene.dragging && event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scene.setHovered(id);
       }}
-      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverEnd={reset} onPointerCancel={reset} onPointerMove={follow}
+      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverEnd={reset} onPointerDown={drag.down} onPointerUp={drag.end} onLostPointerCapture={drag.end} onPointerCancel={event => { drag.end(event); reset(); }} onPointerMove={event => { drag.move(event); if (!scene.dragging) follow(event); }}
       onClick={event => { if (!selected && !blocked && !(event.target as Element).closest(cardControls)) open(); }}
     >
       <motion.div animate={controls} className="h-full [backface-visibility:hidden] [transform-style:preserve-3d]">
         <motion.div className={`relative h-full ${layoutExpanded ? 'overflow-y-auto [&>div:first-of-type]:pr-10' : ''} ${surfaceClassName}`}
-          style={{ maxHeight: layoutExpanded ? '100cqh' : undefined, rotateX: reduced || selected || blocked ? 0 : rotateX, rotateY: reduced || selected || blocked ? 0 : rotateY, rotateZ: layoutExpanded ? 0 : position.rotation }}
+          style={{ maxHeight: layoutExpanded ? '100cqh' : undefined, rotateX: reduced || selected || blocked || scene.dragging ? 0 : rotateX, rotateY: reduced || selected || blocked || scene.dragging ? 0 : rotateY, rotateZ: layoutExpanded ? 0 : position.rotation }}
           animate={selected
             ? { y: 0, scale: 1, boxShadow: '0 32px 96px rgba(0,0,0,0.4)' }
+            : scene.dragging === id ? { y: 0, scale: 1, boxShadow: '0 24px 65px rgba(0,0,0,0.3)' }
             : active ? { y: -6, scale: 1.01, boxShadow: '0 18px 55px rgba(0,0,0,0.22)' }
               : { y: 0, scale: 1, boxShadow: '0 0 0 rgba(0,0,0,0)' }} transition={reduced ? { duration: 0 } : spring}>
           <motion.button type="button" aria-label={`展开${label}`} aria-expanded={expanded} onClick={open} disabled={selected} className="sr-only focus:not-sr-only focus:absolute focus:right-3 focus:top-3 focus:z-10 focus:rounded-full focus:bg-black/10 focus:px-3 focus:py-2">展开</motion.button>

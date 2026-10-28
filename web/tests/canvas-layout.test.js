@@ -12,11 +12,11 @@ test('cards form a moderately spaced group centered on the canvas', () => {
     const layout = createCanvasLayout(seed);
     const center = cardIds.reduce((sum, id) => ({ x: sum.x + layout[id].x / cardIds.length, y: sum.y + layout[id].y / cardIds.length }), { x: 0, y: 0 });
     assert.ok(Math.abs(center.x) < 0.001 && Math.abs(center.y) < 0.001);
-    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 320 && Math.abs(layout[id].y) < 230));
+    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 240 && Math.abs(layout[id].y) < 175));
     for (let i = 0; i < cardIds.length; i++) {
       for (let j = i + 1; j < cardIds.length; j++) {
         const a = layout[cardIds[i]], b = layout[cardIds[j]];
-        assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 340);
+        assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 240);
       }
     }
   }
@@ -33,6 +33,8 @@ test('selected and closing cards always outrank a hovered video or any ordinary 
   }
   assert.equal(cardLayer('video', null, 'video'), 30);
   assert.equal(cardLayer('video', null, null), 3);
+  assert.ok(cardLayer('weather', null, 'video', 'weather') > cardLayer('video', null, 'video', 'weather'));
+  assert.ok(cardLayer('weather', 'idea', 'video', 'weather') < cardLayer('idea', 'idea', 'video', 'weather'));
 });
 
 test('each card has a stable independent rotation between minus five and ten degrees', () => {

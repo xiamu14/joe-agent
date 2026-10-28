@@ -214,6 +214,8 @@ ElevenLabs 使用 `/v1/user/subscription`，展示本账期用量/配额、重�
 
 ## 致谢
 
+示例画布支持拖动卡片和拖动空白处平移视角；拖动卡片靠近画布边缘时，视角会自动跟随。卡片位置、倾斜角及画布视角保存在当前浏览器，刷新或切换画布后恢复，不跨设备同步。浏览器禁用存储时仍可拖动，但无法保存。
+
 流体头像采用 [Rare UI FluidOrb](https://www.rareui.com/components/fluidorb) 的着色器，许可证见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
 ## 视觉组件署名
