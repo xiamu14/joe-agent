@@ -45,7 +45,7 @@ export function StaticWorkspace() {
             </motion.div>
 
           </motion.aside>
-          <motion.section className="flex min-h-0 flex-col lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid lg:grid-rows-subgrid" aria-label="画布与输入">
+          <motion.section className="flex min-h-0 flex-col gap-y-1 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid lg:grid-rows-subgrid" aria-label="画布与输入">
             <motion.div className="relative flex min-h-[540px] flex-1 items-center justify-center lg:min-h-0" aria-label="画布">
               <AnimatePresence mode="wait" initial={false}>
                 {view === 0 ? snapshot && <CanvasPreview key="preview" layout={snapshot.cards} initialPan={snapshot.pan} onSave={rememberCanvas} /> : (

@@ -26,7 +26,7 @@ export function CanvasPreview({ layout, initialPan, onSave }: { layout: CanvasLa
     <CanvasSceneContext value={scene}>
     <motion.div ref={scene.canvas} tabIndex={0} role="region" aria-label="示例卡片"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className={`absolute inset-0 isolate [container-type:size] overflow-clip outline-none ${scene.selection ? 'touch-auto' : pan.dragging ? 'touch-none cursor-grabbing select-none' : 'touch-none cursor-grab'}`}
+      className={`absolute inset-0 isolate [container-type:size] overflow-clip rounded-[28px] outline-none ${scene.selection ? 'touch-auto' : pan.dragging ? 'touch-none cursor-grabbing select-none' : 'touch-none cursor-grab'}`}
       onPointerDown={pan.down} onPointerMove={pan.move} onPointerUp={pan.finish} onPointerCancel={pan.finish} onLostPointerCapture={pan.finish}
       onKeyDown={pan.key} onFocusCapture={pan.focus}
       onClickCapture={event => {
@@ -61,6 +61,10 @@ export function CanvasPreview({ layout, initialPan, onSave }: { layout: CanvasLa
         <motion.h2 className="mb-5 text-[29px] max-sm:text-[23px] leading-tight font-medium tracking-tight">好想法，<motion.span className="block">慢慢落地。</motion.span></motion.h2>
         <TaskList size="sm" accent="#343a20" defaultTasks={[{ id: 'gather', label: '收集灵感', done: true }, { id: 'sort', label: '理清思路' }, { id: 'start', label: '开始动手' }]} className="[&_[data-slot=task-item]]:bg-black/5! [&_[data-slot=task-item]]:text-[#343a20]! [&_[data-slot=task-item]]:shadow-none! [&_[data-slot=task-item]_span]:text-[#343a20]! [&_[data-state=checked]_span]:text-[#343a20]/40!" />
       </TiltCard>
+      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 top-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_top,transparent,black)] xl:h-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 left-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_left,transparent,black)] xl:w-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 right-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_right,transparent,black)] xl:w-7" />
     </motion.div>
     </CanvasSceneContext>
   );
