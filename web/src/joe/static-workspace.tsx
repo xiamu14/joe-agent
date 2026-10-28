@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { BounceSidebar } from '../components/rare-ui/bounce-sidebar';
 import { Faq } from '../components/rare-ui/faq';
-import FluidOrb from '../components/rare-ui/fluid-orb';
+import { ParticleOrb } from '../components/particle-orb/particle-orb';
 import { CanvasPreview } from './workspace-preview';
 import { WorkspaceInput } from './workspace-input';
 
@@ -36,8 +36,8 @@ export function StaticWorkspace() {
             <motion.div className="relative flex min-h-[540px] flex-1 items-center justify-center lg:min-h-0" aria-label="画布">
               <AnimatePresence mode="wait" initial={false}>
                 {view === 0 ? <CanvasPreview key="preview" /> : (
-                  <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-8 pb-10">
-                    <FluidOrb size={220} color="#1A73F2" aria-label="流动光球" />
+                  <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex h-full w-full items-center justify-center pb-10">
+                    <ParticleOrb />
 
                   </motion.div>
                 )}
