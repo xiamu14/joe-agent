@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from 'react';
-import { cardWidths, type CanvasCardId, type CanvasLayout } from '../canvas-layout';
+import { type CanvasCardId, type CanvasLayout } from '../canvas-layout';
 import type { CardSize } from './bento-packing';
 export type LayoutMode = 'free' | 'bento';
 export type LayoutPlacement = { layout: CanvasLayout; draggable: boolean; pannable: boolean; entry: 'scale' | 'slide'; overflow: 'clip' | 'auto'; extent?: { width: number; height: number } };
@@ -18,7 +18,10 @@ export function useCardMeasurements({ canvas, selected }: LayoutLayerProps) {
       const sizes = { ...previous.sizes };
       root.querySelectorAll<HTMLElement>('[data-card]').forEach(node => {
         const id = node.dataset.card as CanvasCardId;
-        if (id !== selected && node.offsetHeight > 0) sizes[id] = { width: cardWidths[id], height: node.offsetHeight };
+        if (id !== selected && node.offsetWidth > 0 && node.offsetHeight > 0) {
+          // Layout dimensions exclude hover/flip transforms and match the rendered card.
+          sizes[id] = { width: node.offsetWidth, height: node.offsetHeight };
+        }
       });
       const next = { width: root.clientWidth, height: root.clientHeight, sizes };
       return JSON.stringify(previous) === JSON.stringify(next) ? previous : next;

@@ -49,6 +49,7 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
     return () => window.removeEventListener('keydown', close);
   }, [scene.selection?.expanded, scene.close, scene.canvas]);
   const Layout = mode === 'free' ? FreeCanvasLayout : BentoCanvasLayout;
+  const edgeOpacity = mode === 'free' && !scene.selection ? 1 : 0;
   return (
     <LayoutGroup id={identity}>
     <CanvasSceneContext value={scene}>
@@ -75,10 +76,10 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
       {visible('weather') && <WeatherCard key="weather" bound={Boolean(weatherId)} resource={weatherResource?.schema === 'weather@1' ? weatherResource.data as import('./types').Weather : undefined} />}
       </AnimatePresence>
       <AccountCards cards={accounts} {...joe} />
-      <motion.div aria-hidden="true" animate={{ opacity: scene.selection || mode === 'bento' ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
-      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 top-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_top,transparent,black)] xl:h-7" />
-      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 left-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_left,transparent,black)] xl:w-7" />
-      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 right-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_right,transparent,black)] xl:w-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: edgeOpacity }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: edgeOpacity }} className="pointer-events-none absolute inset-x-0 top-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_top,transparent,black)] xl:h-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: edgeOpacity }} className="pointer-events-none absolute inset-y-0 left-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_left,transparent,black)] xl:w-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: edgeOpacity }} className="pointer-events-none absolute inset-y-0 right-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_right,transparent,black)] xl:w-7" />
     </motion.div>
     </CanvasSceneContext>
     </LayoutGroup>

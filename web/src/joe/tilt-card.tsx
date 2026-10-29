@@ -42,6 +42,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   const panY = useTransform(() => layoutExpanded ? scene.scrollY.get() : scene.placement.pannable ? scene.panY.get() + drag.dy.get() : 0);
   const active = scene.hovered === id && !reduced && !selected && !blocked && !scene.dragging;
   const position = scene.layout[id];
+  const width = layoutExpanded ? expandedWidth : cardWidths[id];
   useEffect(() => {
     if (!expanded) return;
     x.set(0); y.set(0);
@@ -67,7 +68,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   return (
     <motion.article layout="position" layoutId={`card-${id}`} ref={card} tabIndex={-1} inert={blocked || !present}
       initial={{ opacity: 0, scale: reduced || scene.placement.entry === 'slide' ? 1 : 0.92 }}
-      animate={{ opacity: 1, scale: 1, ...(animateExpandedSize ? { width: layoutExpanded ? expandedWidth : cardWidths[id], height: layoutExpanded ? expandedHeight : 'auto' } : {}) }}
+      animate={{ opacity: 1, scale: 1, ...(animateExpandedSize ? { width, height: layoutExpanded ? expandedHeight : 'auto' } : {}) }}
       exit={{ opacity: 0, scale: reduced || scene.placement.entry === 'slide' ? 1 : 0.94 }}
       transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1], layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] }, width: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] }, height: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] } }} data-card={id}
       className={`absolute ${className} ${selected ? 'cursor-auto' : scene.dragging === id ? 'cursor-grabbing select-none touch-none' : scene.placement.draggable ? 'cursor-grab select-none touch-none' : 'cursor-pointer touch-auto'} outline-none [perspective:1000px]`}
@@ -75,7 +76,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
       style={{
         left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
         top: layoutExpanded ? '50%' : `calc(50% + ${position.y}px)`,
-        width: animateExpandedSize ? undefined : layoutExpanded ? expandedWidth : cardWidths[id],
+        width,
         height: animateExpandedSize ? undefined : layoutExpanded ? expandedHeight : undefined,
         maxHeight: layoutExpanded ? '100cqh' : undefined,
         translate: '-50% -50%',

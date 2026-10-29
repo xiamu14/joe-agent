@@ -17,7 +17,6 @@ test('measures after the parent ref attaches and observes cards added after boot
       state = initial;
       return [state, update => { state = update(state); }];
     },
-    cardWidths: { video: 360 },
     ResizeObserver: class {
       constructor(callback) { onResize = callback; }
       observe(node) { observed.push(node); }
@@ -39,10 +38,16 @@ test('measures after the parent ref attaches and observes cards added after boot
   assert.equal(state.width, 880);
   assert.equal(state.height, 700);
   assert.ok(observed.includes(canvas.current));
-  const video = { dataset: { card: 'video' }, offsetHeight: 124 };
+  const video = { dataset: { card: 'video' }, offsetWidth: 360, offsetHeight: 124 };
   cards.push(video);
   onMutation();
   assert.ok(observed.includes(video));
+  assert.equal(state.sizes.video.height, 124);
+  assert.equal(state.sizes.video.width, 360);
+  // A width-only resize must invalidate packing, even when height stays unchanged.
+  video.offsetWidth = 420;
+  onResize();
+  assert.equal(state.sizes.video.width, 420);
   assert.equal(state.sizes.video.height, 124);
   video.offsetHeight = 416;
   onResize();
