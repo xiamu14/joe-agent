@@ -1,4 +1,8 @@
 export interface YouTubePlayer {
+  getCurrentTime(): number;
+  getDuration(): number;
+  getPlaybackRate(): number;
+  getPlayerState(): number;
   playVideo(): void;
   pauseVideo(): void;
   destroy(): void;

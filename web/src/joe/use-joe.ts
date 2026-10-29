@@ -1,3 +1,4 @@
+import { startBehaviorDelivery } from './behavior/delivery';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotionValue } from 'motion/react';
@@ -51,6 +52,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   const turnVoice = useRef(false);
   const [voicePending, setVoicePending] = useState(false);
   const [widgetCursor, setWidgetCursor] = useState(0);
+  useEffect(() => { startBehaviorDelivery(); }, []);
   const [widgetResources, setWidgetResources] = useState<WidgetResources>({});
   const [widgetVisibility, setWidgetVisibility] = useState<WidgetVisibility>({});
   const [cardRequest, setCardRequest] = useState<{ card: NonNullable<AgentEvent['card']>; turnId: string } | null>(null);

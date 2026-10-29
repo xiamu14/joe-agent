@@ -16,7 +16,7 @@ const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
 export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
   id: CanvasCardId;
-  children: ReactNode;
+  children: ReactNode | ((layoutExpanded: boolean) => ReactNode);
   className?: string;
   surfaceClassName: string;
   label: string;
@@ -77,7 +77,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
         left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
         top: layoutExpanded ? '50%' : `calc(50% + ${position.y}px)`,
         width,
-        height: animateExpandedSize ? undefined : layoutExpanded ? expandedHeight : undefined,
+        height: layoutExpanded ? expandedHeight : animateExpandedSize ? 'auto' : undefined,
         maxHeight: layoutExpanded ? '100cqh' : undefined,
         translate: '-50% -50%',
         x: panX, y: panY,
@@ -104,7 +104,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
             <MotionButton type="button" data-close-card aria-label={`关闭${label}`} onClick={() => { onClose?.(); scene.onRemove?.(id as WidgetCard); }} disabled={flipping || !scene.onRemove} className="grid size-8 place-items-center rounded-full bg-black/10" whileTap={{ scale: 0.95 }}><Icon name="close" className="size-4" /></MotionButton>
             <MotionButton type="button" data-collapse-card aria-label={`收起${label}`} onClick={close} disabled={flipping} className="grid size-8 place-items-center rounded-full bg-black/10" whileTap={{ scale: 0.95 }}><Minus className="size-4" aria-hidden="true" /></MotionButton>
           </motion.div>}
-          {children}
+          {typeof children === 'function' ? children(layoutExpanded) : children}
         </motion.div>
       </motion.div>
       </motion.div>

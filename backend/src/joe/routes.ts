@@ -1,3 +1,7 @@
+import { behaviorStore } from './behavior-runtime';
+import { summarizeWatches } from './video-behavior';
+import { resourceId as memoryResourceId } from './memory';
+import type { WatchData } from '../../../shared/widget-behavior';
 import { finishDesktopAction } from './desktop';
 import { registerApiRoute, type ContextWithMastra as Context } from '@mastra/core/server';
 import { z } from 'zod';
@@ -80,6 +84,14 @@ function route(
   });
 }
 export const routes = [
+  route('/behaviors', 'POST', async c => c.json(behaviorStore.accept(await json(c), memoryResourceId))),
+  route('/video-watches', 'GET', c => {
+    const canvasId = c.req.query('canvasId');
+    if (canvasId) widgetStore.requireCanvas(canvasId);
+    c.header('Cache-Control', 'no-store');
+    const records = behaviorStore.records(memoryResourceId, canvasId, 'youtube.video');
+    return c.json({ records, summary: summarizeWatches(records.map(record => record.payload as WatchData)) });
+  }),
   route('/health', 'GET', async (c) => {
     await mastraStorage.init();
     return c.json({ service: 'joe-backend', ready: true });

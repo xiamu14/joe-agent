@@ -17,7 +17,7 @@ import type { useJoe } from './use-joe';
 export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, mode = 'free', identity = 'canvas' }: {
   mode?: LayoutMode; identity?: string;
   layout: CanvasLayout; initialPan: CanvasSnapshot['pan']; onSave: (snapshot: CanvasSnapshot) => void;
-  joe: AccountCardProps & Pick<ReturnType<typeof useJoe>, 'widgetVisibility' | 'widgetResources' | 'removeWidget' | 'cardRequest'>; emptyContent?: ReactNode;
+  joe: AccountCardProps & Pick<ReturnType<typeof useJoe>, 'sessionId' | 'widgetVisibility' | 'widgetResources' | 'removeWidget' | 'cardRequest'>; emptyContent?: ReactNode;
 }) {
   const scene = useCanvasSceneState(layout, initialPan, onSave, joe.removeWidget);
   const pan = useCanvasPan(scene);
@@ -72,7 +72,7 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
       <Layout canvas={scene.canvas} ids={cards} layout={layout} selected={selected} onPlacement={scene.setPlacement} />
       <AnimatePresence>{!cards.length && emptyContent}</AnimatePresence>
       <AnimatePresence initial={false}>
-      {visible('video') && <YouTubeCard key="video" results={videoResource?.schema === 'youtube.search@1' ? videoResource.data as import('./video/youtube-card').VideoResults : undefined} />}
+      {visible('video') && <YouTubeCard key="video" context={joe.widgetVisibility.video?.canvasId && joe.widgetVisibility.video?.instanceId ? { sessionId: joe.sessionId, canvasId: joe.widgetVisibility.video.canvasId, instanceId: joe.widgetVisibility.video.instanceId } : undefined} results={videoResource?.schema === 'youtube.search@1' ? videoResource.data as import('./video/youtube-card').VideoResults : undefined} />}
       {visible('weather') && <WeatherCard key="weather" bound={Boolean(weatherId)} resource={weatherResource?.schema === 'weather@1' ? weatherResource.data as import('./types').Weather : undefined} />}
       </AnimatePresence>
       <AccountCards cards={accounts} {...joe} />

@@ -1,5 +1,5 @@
 export type WidgetCard = 'costs' | 'settings' | 'weather' | 'video';
-type WidgetState = { visible: boolean; revision: number; bindings: Record<string, { resourceId: string }> };
+type WidgetState = { canvasId?: string; instanceId?: string; visible: boolean; revision: number; bindings: Record<string, { resourceId: string }> };
 export type WidgetVisibility = Partial<Record<WidgetCard, WidgetState>>;
 
 export function applyWidgetSnapshot(current: WidgetVisibility, value: unknown): WidgetVisibility {
@@ -10,7 +10,7 @@ export function applyWidgetSnapshot(current: WidgetVisibility, value: unknown): 
   if (!['costs', 'settings', 'weather', 'video'].includes(card) || typeof instance.visible !== 'boolean' || !Number.isSafeInteger(instance.revision) || (instance.revision as number) < 1) return current;
   const key = card as WidgetCard;
   if ((current[key]?.revision ?? 0) >= (instance.revision as number)) return current;
-  return { ...current, [key]: { visible: instance.visible, revision: instance.revision as number, bindings: (instance.bindings && typeof instance.bindings === 'object' ? instance.bindings : {}) as WidgetState['bindings'] } };
+  return { ...current, [key]: { ...(typeof instance.canvasId === 'string' ? { canvasId: instance.canvasId } : {}), ...(typeof instance.instanceId === 'string' ? { instanceId: instance.instanceId } : {}), visible: instance.visible, revision: instance.revision as number, bindings: (instance.bindings && typeof instance.bindings === 'object' ? instance.bindings : {}) as WidgetState['bindings'] } };
 }
 
 export const widgetCards: readonly WidgetCard[] = ['costs', 'settings', 'weather', 'video'];

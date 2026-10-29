@@ -1,8 +1,10 @@
+import type { BehaviorContext } from '../../../../shared/widget-behavior';
+import { observeWatch } from './observe-watch';
 import { useEffect, useRef, useState } from 'react';
 import type { YouTubePlayer } from './youtube-api';
 import { mountYouTubePlayer, videoId } from './mount-youtube-player';
 
-export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active = true) {
+export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active = true, tracking?: BehaviorContext & { selectionId: string }) {
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<YouTubePlayer | null>(null);
   const expandedRef = useRef(expanded);
@@ -16,7 +18,7 @@ export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active
     expandedRef.current = expanded;
     if (expanded) {
       setStarted(true);
-      if (ready) player.current?.playVideo();
+      if (ready && !document.hidden && document.hasFocus()) player.current?.playVideo();
     } else player.current?.pauseVideo();
   }, [expanded, ready]);
 
@@ -24,20 +26,25 @@ export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active
     if (!active || !started || !host.current) return;
     setError(''); setPlaying(false); setAutoplayBlocked(false);
     setReady(false);
+    let observer: ReturnType<typeof observeWatch> | undefined;
     const dispose = mountYouTubePlayer(host.current, {
       isExpanded: () => expandedRef.current,
-      onReady: instance => { player.current = instance; setReady(true); },
-      onPlaying: setPlaying,
+      onReady: instance => {
+        player.current = instance;
+        if (tracking) observer = observeWatch(instance, selectedId, tracking);
+        setReady(true);
+      },
+      onPlaying: value => { observer?.state(value); setPlaying(value); },
       onError: setError,
       onPlaybackStarted: () => { setAutoplayBlocked(false); setError(''); },
       onAutoplayBlocked: () => { setAutoplayBlocked(true); setPlaying(false); },
     }, selectedId);
-    return () => { player.current = null; dispose(); };
-  }, [active, started, selectedId]);
+    return () => { observer?.dispose(); player.current = null; dispose(); };
+  }, [active, started, selectedId, tracking?.selectionId, tracking?.canvasId, tracking?.instanceId, tracking?.sessionId]);
 
   function play() {
     setAutoplayBlocked(false);
-    if (ready) { setError(''); player.current?.playVideo(); }
+    if (ready && !document.hidden && document.hasFocus()) { setError(''); player.current?.playVideo(); }
   }
   function pause() { player.current?.pauseVideo(); }
   function toggle() { if (playing) pause(); else play(); }

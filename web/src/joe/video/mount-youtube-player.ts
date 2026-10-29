@@ -14,6 +14,7 @@ type Callbacks = {
 
 export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks, selectedId = videoId) {
   let cancelled = false;
+  let ready = false;
   let instance: YouTubePlayer | undefined;
   // Embed immediately: native playback controls remain usable if the JS API fails.
   const target = document.createElement('iframe');
@@ -22,6 +23,18 @@ export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks,
   target.title = 'YouTube 视频播放器';
   target.referrerPolicy = 'strict-origin-when-cross-origin';
   container.append(target);
+  let blurTimer: ReturnType<typeof setTimeout> | undefined;
+  const foreground = () => !document.hidden && document.hasFocus();
+  function pauseInBackground() {
+    if (cancelled || foreground()) return;
+    if (ready && instance) instance.pauseVideo();
+    else target.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), 'https://www.youtube.com');
+    callbacks.onPlaying(false);
+  }
+  // Focus moving into the iframe also blurs window; check document focus after it settles.
+  const onBlur = () => { clearTimeout(blurTimer); blurTimer = setTimeout(pauseInBackground, 0); };
+  window.addEventListener('blur', onBlur);
+  document.addEventListener('visibilitychange', pauseInBackground);
   const timer = setTimeout(() => callbacks.onError('播放器控制连接超时，可使用视频内控件'), 20000);
   void loadYouTubeApi().then(api => {
     if (cancelled) return;
@@ -32,12 +45,16 @@ export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks,
         onReady(event) {
           if (cancelled) return;
           clearTimeout(timer);
+          ready = true;
           callbacks.onError('');
           callbacks.onReady(event.target);
+          pauseInBackground();
         },
         onStateChange(event) {
           if (cancelled) return;
-          if (event.data === 1 && !callbacks.isExpanded()) { event.target.pauseVideo(); return; }
+          if (event.data === 1 && (!callbacks.isExpanded() || !foreground())) {
+            event.target.pauseVideo(); callbacks.onPlaying(false); return;
+          }
           callbacks.onPlaying(event.data === 1);
           if (event.data === 1) callbacks.onPlaybackStarted();
         },
@@ -59,6 +76,9 @@ export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks,
   return () => {
     cancelled = true;
     clearTimeout(timer);
+    clearTimeout(blurTimer);
+    window.removeEventListener('blur', onBlur);
+    document.removeEventListener('visibilitychange', pauseInBackground);
     instance?.destroy();
     container.replaceChildren();
   };
