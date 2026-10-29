@@ -237,3 +237,9 @@ backend 设置 `DATA_MCP_URL=http://127.0.0.1:4120/mcp` 后重启。数据服务
 MCP 提供 `youtube_search`、`youtube_get_video`、`youtube_get_subtitles`。Mastra 的视频搜索通过 MCP 查询并更新卡片，仅返回数量与简短提示给模型，避免逐条朗读。标题、频道、播放量取自 Agent Reach；发布日期缺失时省略。视频 ID 沿用 YouTube 外部协议。
 
 卡片以滚动列表展示搜索结果与置顶的最近播放，点击后展开播放器，可返回列表。最近播放仅在播放器报告实际播放后记录，按视频去重、最多 20 条，保存在当前浏览器的 YouTube widget 专属 localStorage 中；不上传数据服务，不跨设备同步。存储不可用时仍可播放。
+
+### 画布布局
+
+输入区工具菜单中的「自由 / Bento」显示当前布局，点击直接切换；两个空间分别记住布局选择。`FreeCanvasLayout` 和 `BentoCanvasLayout` 分别负责自由定位与固定尺寸排布，卡片内容层始终保持挂载，通过 Motion LayoutGroup / layoutId 平滑移动，切换不会重建播放器或设置表单。自由坐标独立保存，Bento 不会覆盖它们。
+
+Bento 按可见卡片原始宽高排列，间隔 16px，卡片增删后自动补位；画布不足时滚动且隐藏滚动条。进入退出使用位移和透明度，自由布局使用缩放和透明度；展开、收起和视频播放尺寸沿用卡片现有规则。

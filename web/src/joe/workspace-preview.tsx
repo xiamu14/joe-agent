@@ -1,5 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { FreeCanvasLayout } from './layouts/free-canvas-layout';
+import { BentoCanvasLayout } from './layouts/bento-canvas-layout';
+import type { LayoutMode } from './layouts/canvas-layout-layer';
 import { WeatherCard } from './weather/weather-card';
 import { YouTubeCard } from './video/youtube-card';
 import { CanvasSceneContext, useCanvasSceneState } from './canvas-scene';
@@ -11,7 +14,8 @@ import type { OrdinaryCard } from './workspace-state';
 import { visibleWidgetCards, type WidgetCard } from './widget-visibility';
 import type { useJoe } from './use-joe';
 
-export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent }: {
+export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, mode = 'free', identity = 'canvas' }: {
+  mode?: LayoutMode; identity?: string;
   layout: CanvasLayout; initialPan: CanvasSnapshot['pan']; onSave: (snapshot: CanvasSnapshot) => void;
   joe: AccountCardProps & Pick<ReturnType<typeof useJoe>, 'widgetVisibility' | 'widgetResources' | 'removeWidget' | 'cardRequest'>; emptyContent?: ReactNode;
 }) {
@@ -44,11 +48,15 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent }:
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   }, [scene.selection?.expanded, scene.close, scene.canvas]);
+  const Layout = mode === 'free' ? FreeCanvasLayout : BentoCanvasLayout;
   return (
+    <LayoutGroup id={identity}>
     <CanvasSceneContext value={scene}>
     <motion.div ref={scene.canvas} tabIndex={0} role="region" aria-label="画布卡片"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className={`absolute inset-0 isolate [container-type:size] overflow-clip rounded-[28px] outline-none ${scene.selection ? 'touch-auto' : pan.dragging ? 'touch-none cursor-grabbing select-none' : 'touch-none cursor-grab'}`}
+      onScroll={event => { scene.scrollX.set(event.currentTarget.scrollLeft); scene.scrollY.set(event.currentTarget.scrollTop); }}
+      style={{ overflow: scene.selection ? 'clip' : scene.placement.overflow }}
+      className={`absolute inset-0 isolate [container-type:size] [overflow-anchor:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-[28px] outline-none ${scene.selection || !scene.placement.pannable ? 'touch-auto' : pan.dragging ? 'touch-none cursor-grabbing select-none' : 'touch-none cursor-grab'}`}
       onPointerDown={pan.down} onPointerMove={pan.move} onPointerUp={pan.finish} onPointerCancel={pan.finish} onLostPointerCapture={pan.finish}
       onKeyDown={pan.key} onFocusCapture={pan.focus}
       onClickCapture={event => {
@@ -60,17 +68,19 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent }:
           event.stopPropagation(); scene.close();
         }
       }}>
+      <Layout canvas={scene.canvas} ids={cards} layout={layout} selected={selected} onPlacement={scene.setPlacement} />
       <AnimatePresence>{!cards.length && emptyContent}</AnimatePresence>
       <AnimatePresence initial={false}>
       {visible('video') && <YouTubeCard key="video" results={videoResource?.schema === 'youtube.search@1' ? videoResource.data as import('./video/youtube-card').VideoResults : undefined} />}
       {visible('weather') && <WeatherCard key="weather" bound={Boolean(weatherId)} resource={weatherResource?.schema === 'weather@1' ? weatherResource.data as import('./types').Weather : undefined} />}
       </AnimatePresence>
       <AccountCards cards={accounts} {...joe} />
-      <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
+      <motion.div aria-hidden="true" animate={{ opacity: scene.selection || mode === 'bento' ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 bottom-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
       <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-x-0 top-0 z-[70] h-5 backdrop-blur-md [mask-image:linear-gradient(to_top,transparent,black)] xl:h-7" />
       <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 left-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_left,transparent,black)] xl:w-7" />
       <motion.div aria-hidden="true" animate={{ opacity: scene.selection ? 0 : 1 }} className="pointer-events-none absolute inset-y-0 right-0 z-[70] w-5 backdrop-blur-md [mask-image:linear-gradient(to_right,transparent,black)] xl:w-7" />
     </motion.div>
     </CanvasSceneContext>
+    </LayoutGroup>
   );
 }

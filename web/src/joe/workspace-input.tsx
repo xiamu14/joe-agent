@@ -9,7 +9,7 @@ import { api, jsonBody } from './api';
 
 const iconButton = 'grid size-[30px] shrink-0 place-items-center rounded-full bg-[#333333] text-white';
 
-export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady, onSettings }: {
+export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady, onSettings, layoutMode, onToggleLayout }: {
   text: string;
   onTextChange: Dispatch<SetStateAction<string>>;
   onSend: (text: string, spoken?: boolean, validate?: () => Promise<boolean>) => Promise<boolean>;
@@ -18,6 +18,7 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
   sessionId: string;
   voiceReady: boolean;
   onSettings(): Promise<boolean>;
+  layoutMode: 'free' | 'bento'; onToggleLayout(): void;
 }) {
   const voice = useDictation(sessionId, value => onTextChange(current => `${current}${current && !/\s$/.test(current) ? ' ' : ''}${value}`.slice(0, 12000)));
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +50,7 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
       <motion.textarea value={`${text}${preview}`.slice(0, 12000)} onChange={event => { const value = event.target.value; if (preview && value.endsWith(preview)) onTextChange(value.slice(0, -preview.length)); else { onTextChange(value); voice.setPreview(''); } }} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void submit(); } }} rows={2} aria-label="消息" placeholder="有什么想和我分享的吗？" maxLength={12000} className="w-full min-w-0 resize-none border-0 bg-transparent p-0 text-sm leading-6 tracking-wider text-white outline-none placeholder:text-[#8d8d8d] sm:text-base" />
       <motion.div className="flex w-full items-center justify-between">
         <motion.div className="flex items-center gap-2">
-          <WorkspaceTools onSettings={onSettings} ready={ready} className={iconButton} />
+          <WorkspaceTools layoutMode={layoutMode} onToggleLayout={onToggleLayout} onSettings={onSettings} ready={ready} className={iconButton} />
           <motion.button type="button" disabled aria-label="添加附件" className={iconButton}><Paperclip size={14} strokeWidth={1.75} /></motion.button>
         </motion.div>
         <VoiceWave active={recording} level={level} />

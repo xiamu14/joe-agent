@@ -37,9 +37,9 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   const { controls, reduced, layoutExpanded, flipping, rememberFocus } = useCardFlip(expanded, card, onClosed);
   const x = useMotionValue(0), y = useMotionValue(0);
   const rotateX = useSpring(x, spring), rotateY = useSpring(y, spring);
-  const drag = useCardDrag(id, scene, Boolean(scene.selection) || flipping, reset);
-  const panX = useTransform(() => layoutExpanded ? 0 : scene.panX.get() + drag.dx.get());
-  const panY = useTransform(() => layoutExpanded ? 0 : scene.panY.get() + drag.dy.get());
+  const drag = useCardDrag(id, scene, !scene.placement.draggable || Boolean(scene.selection) || flipping, reset);
+  const panX = useTransform(() => layoutExpanded ? scene.scrollX.get() : scene.placement.pannable ? scene.panX.get() + drag.dx.get() : 0);
+  const panY = useTransform(() => layoutExpanded ? scene.scrollY.get() : scene.placement.pannable ? scene.panY.get() + drag.dy.get() : 0);
   const active = scene.hovered === id && !reduced && !selected && !blocked && !scene.dragging;
   const position = scene.layout[id];
   useEffect(() => {
@@ -65,12 +65,12 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   function close() { onClose?.(); scene.close(); }
 
   return (
-    <motion.article ref={card} tabIndex={-1} inert={blocked || !present}
-      initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
+    <motion.article layout="position" layoutId={`card-${id}`} ref={card} tabIndex={-1} inert={blocked || !present}
+      initial={{ opacity: 0, scale: reduced || scene.placement.entry === 'slide' ? 1 : 0.92 }}
       animate={{ opacity: 1, scale: 1, ...(animateExpandedSize ? { width: layoutExpanded ? expandedWidth : cardWidths[id], height: layoutExpanded ? expandedHeight : 'auto' } : {}) }}
-      exit={{ opacity: 0, scale: reduced ? 1 : 0.94 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1], width: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] }, height: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] } }} data-card={id}
-      className={`absolute ${className} ${selected ? 'cursor-auto' : scene.dragging === id ? 'cursor-grabbing select-none touch-none' : 'cursor-grab select-none touch-none'} outline-none [perspective:1000px]`}
+      exit={{ opacity: 0, scale: reduced || scene.placement.entry === 'slide' ? 1 : 0.94 }}
+      transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1], layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] }, width: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] }, height: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] } }} data-card={id}
+      className={`absolute ${className} ${selected ? 'cursor-auto' : scene.dragging === id ? 'cursor-grabbing select-none touch-none' : scene.placement.draggable ? 'cursor-grab select-none touch-none' : 'cursor-pointer touch-auto'} outline-none [perspective:1000px]`}
       aria-label={label} data-expanded={expanded || layoutExpanded} data-flipping={flipping} data-dragging={scene.dragging === id || undefined}
       style={{
         left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
@@ -89,6 +89,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
       }}
       onClick={event => { if (!selected && !blocked && !(event.target as Element).closest(cardControls)) open(); }}
     >
+      <motion.div initial={{ y: reduced || scene.placement.entry === 'scale' ? 0 : 20 }} animate={{ y: 0 }} exit={{ y: reduced || scene.placement.entry === 'scale' ? 0 : 12 }} transition={{ duration: reduced ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }} className="h-full">
       <motion.div animate={controls} className="h-full [backface-visibility:hidden] [transform-style:preserve-3d]">
         <motion.div className={`relative h-full ${layoutExpanded ? `${expandedScroll ? 'overflow-y-auto' : 'overflow-hidden'} [&>div:nth-of-type(2)]:pr-20` : ''} ${surfaceClassName}`}
           style={{ maxHeight: layoutExpanded ? '100cqh' : undefined, rotateX: reduced || selected || blocked || scene.dragging ? 0 : rotateX, rotateY: reduced || selected || blocked || scene.dragging ? 0 : rotateY, rotateZ: layoutExpanded ? 0 : position.rotation }}
@@ -104,6 +105,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
           </motion.div>}
           {children}
         </motion.div>
+      </motion.div>
       </motion.div>
     </motion.article>
   );

@@ -19,6 +19,7 @@ export function useCanvasPan(scene: CanvasScene) {
     }
   }
   function down(event: PointerEvent<HTMLDivElement>) {
+    if (!scene.placement.pannable) return;
     if (event.button !== 0 || !event.isPrimary || scene.dragging) return;
     suppressClick.current = false;
     if ((event.target as Element).closest(`[data-card], ${cardControls}`)) return;
@@ -54,6 +55,7 @@ export function useCanvasPan(scene: CanvasScene) {
     }
   }
   function key(event: KeyboardEvent<HTMLDivElement>) {
+    if (!scene.placement.pannable) return;
     if (event.target !== event.currentTarget || scene.selection || scene.dragging) return;
     const direction: Record<string, [number, number]> = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
     if (direction[event.key]) {
@@ -63,6 +65,7 @@ export function useCanvasPan(scene: CanvasScene) {
     }
   }
   function focus(event: FocusEvent<HTMLDivElement>) {
+    if (!scene.placement.pannable) return;
     const target = event.target as HTMLElement;
     if (scene.selection || scene.dragging || !target.matches(':focus-visible')) return;
     const id = target.closest<HTMLElement>('[data-card]')?.dataset.card as CanvasCardId | undefined;
