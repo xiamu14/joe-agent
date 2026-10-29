@@ -10,8 +10,9 @@ import type { Message } from '../src/joe/store';
 const directory = mkdtempSync(join(tmpdir(), 'joe-speech-test-'));
 process.env.JOE_DATA_DIR = directory;
 process.env.OPENROUTER_API_TOKEN = 'test-token';
-process.env.JOE_MODELS_JSON = JSON.stringify([
-  { id: 'openai/test', label: 'Test', inputPerMillion: 1, outputPerMillion: 2 },
+const { JOE_MODELS_JSON } = await import('../src/config/models');
+JOE_MODELS_JSON.splice(0, JOE_MODELS_JSON.length, ...[
+  { type: 'Think', id: 'openai/test', label: 'Test', inputPerMillion: 1, outputPerMillion: 2 },
 ]);
 process.env.JOE_TTS_PROVIDER = 'elevenlabs';
 process.env.ELEVENLABS_API_KEY = 'test-token';

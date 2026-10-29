@@ -16,7 +16,7 @@ export const expressionSchema = z.object({
 export const answerSchema = z.object({
   expression: expressionSchema,
   text: z.string().min(1),
-  card: z.enum(['time', 'costs', 'settings']).optional(),
+  card: z.enum(['costs', 'settings']).optional(),
 });
 export type Expression = z.infer<typeof expressionSchema>;
 export const fallbackExpression: Expression = {

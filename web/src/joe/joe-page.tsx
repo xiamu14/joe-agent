@@ -4,7 +4,6 @@ import { MotionConfig } from 'motion/react';
 import { ThoughtOrb } from '../components/thought-orb';
 import { MessageList } from '../components/conversation/messages';
 import { Composer } from '../components/conversation/composer';
-import { InfoPanel } from '../components/panels/info-panel';
 import { SettingsPanel } from '../components/panels/settings-panel';
 import { VoiceAccountPanel } from '../components/panels/voice-account-panel';
 import { Background } from '../components/workspace/background';
@@ -62,14 +61,13 @@ export function JoePage() {
             onClose={() => workspace.ordinary && setWorkspace(current => closeCard(current, workspace.ordinary!))}>
             <div className="min-h-0 flex-1">
               <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><VoiceAccountPanel usage={joe.bootstrap?.usage} /></div>
-              <div hidden={workspace.ordinary !== 'time'} className={panelBody}><InfoPanel bootstrap={joe.bootstrap} /></div>
               <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
             </div>
           </CardFrame>
           <CardOverview open={overview} onClose={() => setOverview(false)} onSelect={open} bootstrap={joe.bootstrap} messages={joe.messages} visual={visual} level={joe.level} />
         </main>
         <Dock level={joe.level} timezone={joe.bootstrap?.settings.timezone || 'Asia/Shanghai'} visual={visual} active={!conversationPrimary && !voice.asking} status={voice.status}
-          overview={overview} onTime={() => open('time')} onOverview={() => setOverview(current => !current)} onConversation={() => open('conversation')} />
+          overview={overview} onOverview={() => setOverview(current => !current)} onConversation={() => open('conversation')} />
         <VoicePermission open={voice.asking} ready={voice.ready} onEnable={voice.enable} onSkip={voice.skip} />
       </div>
     </MotionConfig>

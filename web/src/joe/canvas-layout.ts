@@ -1,7 +1,7 @@
-export const cardIds = ['idea', 'question', 'video', 'tasks', 'weather'] as const;
+export const cardIds = ['idea', 'question', 'video', 'tasks', 'weather', 'costs', 'settings'] as const;
 export type CanvasCardId = typeof cardIds[number];
 export type CanvasLayout = Record<CanvasCardId, { x: number; y: number; rotation: number }>;
-export const cardWidths: Record<CanvasCardId, number> = { idea: 374, question: 310, video: 360, tasks: 338, weather: 380 };
+export const cardWidths: Record<CanvasCardId, number> = { idea: 374, question: 310, video: 360, tasks: 338, weather: 380, costs: 320, settings: 310 };
 
 export function createCanvasLayout(seed: number): CanvasLayout {
   let value = seed >>> 0;
@@ -9,7 +9,7 @@ export function createCanvasLayout(seed: number): CanvasLayout {
     value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
     return value / 4294967296;
   };
-  const cells = [{ x: -220, y: -155 }, { x: 220, y: -155 }, { x: -220, y: 155 }, { x: 220, y: 155 }];
+  const cells = [{ x: -240, y: -155 }, { x: 0, y: -155 }, { x: 240, y: -155 }, { x: -240, y: 155 }, { x: 0, y: 155 }, { x: 240, y: 155 }];
   for (let i = cells.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [cells[i], cells[j]] = [cells[j], cells[i]];

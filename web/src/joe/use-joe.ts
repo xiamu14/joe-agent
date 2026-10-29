@@ -189,7 +189,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
-      if (event.type === 'card.open' && event.card) setCardRequest({ card: event.card, turnId: id });
+      if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings')) setCardRequest({ card: event.card, turnId: id });
       if (event.type === 'messages' && event.user && event.assistant) {
         assistantId = event.assistant.id;
         accepted = true;
@@ -341,6 +341,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     }
   }
   async function newSession() {
+    setCardRequest(null);
     stop();
     textStream.clear();
     generation.current++;

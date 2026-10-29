@@ -1,4 +1,4 @@
-export type OrdinaryCard = 'costs' | 'time' | 'settings';
+export type OrdinaryCard = 'costs' | 'settings';
 export type CardId = OrdinaryCard | 'conversation';
 export type Workspace = { primary: CardId; ordinary: OrdinaryCard | null; conversation: boolean };
 export const initialWorkspace: Workspace = { primary: 'conversation', ordinary: 'costs', conversation: true };
@@ -24,5 +24,5 @@ export function swapCards(state: Workspace): Workspace {
 }
 
 export const cardNames: Record<CardId, string> = {
-  conversation: '对话', costs: '费用', time: '时间', settings: '设置',
+  conversation: '对话', costs: '费用', settings: '设置',
 };

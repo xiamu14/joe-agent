@@ -40,3 +40,13 @@ test('invalid browser storage falls back safely and new cards use their initial 
   assert.deepEqual(value.cards.video, { x: 10, y: 20, rotation: -3 });
   assert.deepEqual(value.pan, { x: 0, y: 0 });
 });
+
+test('five-card layouts retain their positions when costs and settings are introduced', () => {
+  const fallback = createCanvasLayout(42);
+  const old = Object.fromEntries(['idea', 'question', 'video', 'tasks', 'weather'].map(id => [id, { x: 20, y: -30, rotation: 3 }]));
+  const restored = restoreCanvas(JSON.stringify({ version: 1, cards: old, pan: { x: 100, y: 50 } }), fallback);
+  for (const id of Object.keys(old)) assert.deepEqual(restored.cards[id], old[id]);
+  assert.deepEqual(restored.cards.costs, fallback.costs);
+  assert.deepEqual(restored.cards.settings, fallback.settings);
+  assert.deepEqual(restored.pan, { x: 100, y: 50 });
+});

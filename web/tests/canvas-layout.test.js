@@ -12,11 +12,11 @@ test('cards form a moderately spaced group centered on the canvas', () => {
     const layout = createCanvasLayout(seed);
     const center = cardIds.reduce((sum, id) => ({ x: sum.x + layout[id].x / cardIds.length, y: sum.y + layout[id].y / cardIds.length }), { x: 0, y: 0 });
     assert.ok(Math.abs(center.x) < 0.001 && Math.abs(center.y) < 0.001);
-    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 240 && Math.abs(layout[id].y) < 175));
+    assert.ok(cardIds.every(id => Math.abs(layout[id].x) < 260 && Math.abs(layout[id].y) < 175));
     for (let i = 0; i < cardIds.length; i++) {
       for (let j = i + 1; j < cardIds.length; j++) {
         const a = layout[cardIds[i]], b = layout[cardIds[j]];
-        assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 240);
+        assert.ok(Math.hypot(a.x - b.x, a.y - b.y) > 130);
       }
     }
   }

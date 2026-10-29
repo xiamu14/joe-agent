@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="610" viewBox="0 0 1140 610" role="img" aria-labelledby="title desc">
+  <title id="title">Finance 卡片：固定模板与实时数据同步</title>
+  <desc id="desc">示例数据。只看余额时显示人民币128450.75元；按账户展开后显示银行卡98000.75元和零钱30450元；其他客户端入账2500元后，余额更新到130950.75元，银行卡更新到100500.75元，布局不变。</desc>
+  <rect width="1140" height="610" rx="24" fill="#E9EEF4"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif" fill="#151622">
+    <text x="32" y="46" font-size="24" font-weight="500">固定模板，随数据更新</text>
+    <text x="1108" y="44" text-anchor="end" font-size="14" fill="#687181">示例数据 · 设计示意</text>
+    <text x="32" y="100" font-size="18">“看看余额”</text>
+    <text x="402" y="100" font-size="18">“按账户展开”</text>
+    <text x="772" y="100" font-size="18">其他客户端入账 ¥2,500</text>
+    <rect x="32" y="122" width="336" height="238" rx="24" fill="#FFFFFF"/>
+    <rect x="402" y="122" width="336" height="372" rx="24" fill="#FFFFFF"/>
+    <rect x="772" y="122" width="336" height="372" rx="24" fill="#FFFFFF"/>
+    <g font-size="18" font-weight="500">
+      <text x="56" y="162">财务</text><text x="426" y="162">财务</text><text x="796" y="162">财务</text>
+    </g>
+    <g font-size="14" fill="#737C8C">
+      <text x="344" y="161" text-anchor="end">刚刚更新</text><text x="714" y="161" text-anchor="end">刚刚更新</text><text x="1084" y="161" text-anchor="end">刚刚更新</text>
+      <text x="56" y="218">总余额</text><text x="426" y="218">总余额</text><text x="796" y="218">总余额</text>
+    </g>
+    <g font-size="34" font-weight="500">
+      <text x="56" y="264">¥128,450.75</text><text x="426" y="264">¥128,450.75</text><text x="796" y="264" fill="#059669">¥130,950.75</text>
+    </g>
+    <text x="56" y="320" font-size="14" fill="#737C8C">人民币</text>
+    <text x="426" y="300" font-size="14" fill="#737C8C">人民币</text>
+    <text x="796" y="300" font-size="14" fill="#737C8C">人民币</text>
+    <g font-size="16">
+      <text x="426" y="353">银行卡</text><text x="714" y="353" text-anchor="end">¥98,000.75</text>
+      <text x="426" y="399">零钱</text><text x="714" y="399" text-anchor="end">¥30,450.00</text>
+      <text x="796" y="353">银行卡</text><text x="1084" y="353" text-anchor="end">¥100,500.75</text>
+      <text x="796" y="399">零钱</text><text x="1084" y="399" text-anchor="end">¥30,450.00</text>
+    </g>
+    <rect x="426" y="431" width="288" height="40" rx="12" fill="#EEEFFD"/>
+    <rect x="796" y="431" width="288" height="40" rx="12" fill="#EEEFFD"/>
+    <text x="570" y="457" text-anchor="middle" font-size="15" fill="#493BEE">收起明细</text>
+    <text x="940" y="457" text-anchor="middle" font-size="15" fill="#493BEE">收起明细</text>
+    <g font-size="15" fill="#737C8C">
+      <text x="32" y="540">余额视图</text>
+      <text x="402" y="540">账户明细</text>
+      <text x="772" y="540">数据同步，布局不变</text>
+      <text x="32" y="577">不生成业务金额</text>
+      <text x="402" y="577">模板绑定真实数据字段</text>
+      <text x="772" y="577">不调用模型，不改变卡片位置</text>
+    </g>
+  </g>
+</svg>

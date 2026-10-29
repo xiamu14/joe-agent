@@ -10,9 +10,10 @@ process.env.JOE_DATA_DIR = directory;
 process.env.OPENROUTER_API_TOKEN = 'test-placeholder';
 process.env.WEATHER_API_KEY = 'weather-test';
 process.env.ZENDOCS_SEARCH_URL = 'https://zendocs.test/search';
-process.env.JOE_MODELS_JSON = JSON.stringify([
-  { id: 'openai/test', label: 'Test', inputPerMillion: 1, outputPerMillion: 2 },
-  { id: 'anthropic/test', label: 'Other' },
+const { JOE_MODELS_JSON } = await import('../src/config/models');
+JOE_MODELS_JSON.splice(0, JOE_MODELS_JSON.length, ...[
+  { type: 'Think', id: 'openai/test', label: 'Test', inputPerMillion: 1, outputPerMillion: 2 },
+  { type: 'Think', id: 'anthropic/test', label: 'Other' },
 ]);
 const { mastra } = await import('../src/mastra/index');
 const { readEvents } = await import('../../web/src/joe/stream');
