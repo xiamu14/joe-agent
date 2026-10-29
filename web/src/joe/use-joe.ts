@@ -385,6 +385,14 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setError(String(e));
     }
   }
+  async function openSettingsWidget() {
+    const current = generation.current;
+    const result = await api<{ instance: unknown }>('/widget-visibility', jsonBody({ sessionId, card: 'settings', visible: true }));
+    if (current !== generation.current) return false;
+    setWidgetVisibility(previous => applyWidgetSnapshot(previous, result.instance));
+    setCardRequest({ card: 'settings', turnId: nanoid() });
+    return true;
+  }
   async function removeWidget(card: WidgetCard) {
     try {
       const result = await api<{ instance: unknown }>('/widget-visibility', jsonBody({ sessionId, card, visible: false }));
@@ -432,6 +440,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     cardRequest,
     widgetVisibility,
     removeWidget,
+    openSettingsWidget,
     widgetResources,
     error,
     attachments,
