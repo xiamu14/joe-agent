@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { LayoutMode } from './canvas-layout-layer';
-const storageKey = 'canvas.layout-modes.v1';
+import { loadCanvasPreferences, saveCanvasPreferences } from './canvas-preferences';
 export function useCanvasModes() {
+  const [view, setView] = useState(0);
   const [modes, setModes] = useState<LayoutMode[]>(['free', 'free']);
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
-      if (Array.isArray(saved)) setModes([0, 1].map(index => saved[index] === 'bento' ? 'bento' : 'free'));
-    } catch { /* Keep the default when storage is unavailable. */ }
+    const saved = loadCanvasPreferences();
+    setView(saved.view);
+    setModes(saved.modes);
+    setRestored(true);
   }, []);
+  useEffect(() => {
+    if (restored) saveCanvasPreferences({ view, modes });
+  }, [view, modes, restored]);
   function toggle(index: number) {
-    setModes(previous => {
-      const next = previous.map((mode, i) => i === index ? mode === 'free' ? 'bento' : 'free' : mode);
-      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Switching works without storage. */ }
-      return next;
-    });
+    setModes(previous => previous.map((mode, i) => i === index ? mode === 'free' ? 'bento' : 'free' : mode));
   }
-  return { modes, toggle };
+  return { view, setView, modes, toggle };
 }

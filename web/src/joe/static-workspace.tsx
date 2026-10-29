@@ -16,8 +16,7 @@ const initialCards: readonly WidgetCard[] = ['video', 'weather', 'costs', 'setti
 const noCards: readonly WidgetCard[] = [];
 
 export function StaticWorkspace() {
-  const [view, setView] = useState(0);
-  const { modes, toggle } = useCanvasModes();
+  const { view, setView, modes, toggle } = useCanvasModes();
   const first = useJoe({ sessionKey: 'joe.canvas.example.session', initialCards });
   const second = useJoe({ sessionKey: 'joe.canvas.empty.session', initialCards: noCards });
   const joe = [first, second][view];

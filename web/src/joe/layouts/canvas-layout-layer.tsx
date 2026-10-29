@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { cardWidths, type CanvasCardId, type CanvasLayout } from '../canvas-layout';
 import type { CardSize } from './bento-packing';
 export type LayoutMode = 'free' | 'bento';
@@ -10,7 +10,8 @@ export type LayoutLayerProps = {
 
 export function useCardMeasurements({ canvas, selected }: LayoutLayerProps) {
   const [measurements, setMeasurements] = useState({ width: 0, height: 0, sizes: {} as Partial<Record<CanvasCardId, CardSize>> });
-  useLayoutEffect(() => {
+  // The parent canvas ref is attached after its children's layout effects.
+  useEffect(() => {
     const root = canvas.current;
     if (!root) return;
     const read = () => setMeasurements(previous => {
