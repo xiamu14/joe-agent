@@ -1,5 +1,6 @@
 import { desktopStateSchema } from './desktop';
 import { z } from 'zod';
+import { isIP } from 'node:net';
 export const emotionSchema = z.enum([
   'calm',
   'curious',
@@ -16,14 +17,14 @@ export const expressionSchema = z.object({
 export const answerSchema = z.object({
   expression: expressionSchema,
   text: z.string().min(1),
-  card: z.enum(['costs', 'settings']).optional(),
 });
 export type Expression = z.infer<typeof expressionSchema>;
 export const fallbackExpression: Expression = {
   emotion: 'calm',
   intensity: 0.35,
 };
-export const idSchema = z.string().uuid();
+export { idSchema } from './id';
+import { idSchema } from './id';
 export const voiceLanguageSchema = z.enum(['auto', 'en', 'zh']);
 export const settingsSchema = z.object({
   voice: z.boolean().default(true),
@@ -49,6 +50,7 @@ export const chatSchema = z
     turnId: idSchema,
     text: z.string().trim().max(12000),
     model: z.string().max(150),
+    clientIp: z.string().refine(value => isIP(value) !== 0).optional(),
     attachmentIds: z.array(idSchema).max(5).default([]),
     desktop: desktopStateSchema.optional(),
   })

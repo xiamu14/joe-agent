@@ -44,7 +44,7 @@ bun run dev
 - 停止、开启下一轮或开始录音会取消当前回答/音频，迟到的响应不会恢复播放。关闭语音会立即停止，并禁止本轮后续合成；重新开启对下一轮生效。
 - 附件支持 UTF-8 `.md` / `.txt`，单文件不超过 1MB / 60,000 字符，每轮最多五个。后续追问保留最近 30 条消息及对应附件上下文；较大上下文仍受所选模型限制。附件作为不可信资料传递，不执行其中指令。
 - 新会话切换到空白会话，旧会话仍保存在本地数据库；此版不提供会话历史选择器。
-- 首页通过 WeatherAPI.com 的 `auto:ip` 自动定位并显示当前天气，缓存 15 分钟；设置中不再填写城市或时区。显示时间跟随定位返回的时区，费用统计保留原统计时区。
+- 首页通过客户端公网 IP 自动定位并显示当前天气，缓存 15 分钟；设置中不再填写城市或时区。显示时间跟随定位返回的时区，费用统计保留原统计时区。
 - 定时任务保留设置占位，尚不执行任务。
 
 ## 状态与情绪协议
@@ -204,11 +204,11 @@ ElevenLabs 使用 `/v1/user/subscription`，展示本账期用量/配额、重�
 
 ### IP 天气与 Agent 天气工具
 
-`WEATHER_API_KEY` 使用 [WeatherAPI.com 账户](https://www.weatherapi.com/my/)中的 API Key，仅保存在后端。`currentWeather()` 是首页获取 IP 天气的函数，调用共享的 `weather('auto:ip')`；`getWeather` 是 Mastra 工具，指定 `city` 可查任意城市，省略时查询当前位置。工具复用同一查询函数，包含温度、体感、天气描述、湿度、风速、地点、时区和观测时间，支持取消、错误提示及 15 分钟缓存。
+`WEATHER_API_KEY` 使用 [WeatherAPI.com 账户](https://www.weatherapi.com/my/)中的 API Key，仅保存在后端。首页通过客户端查询公网 IP 后传给 `currentWeather(clientIp)`，由服务端使用该 IP 查询天气；无法取得 IP 时提示指定城市，不使用后端出口定位；`getWeather` 是 Mastra 工具，指定 `city` 可查任意城市，省略时查询当前位置。工具复用同一查询函数，包含温度、体感、天气描述、湿度、风速、地点、时区和观测时间，支持取消、错误提示及 15 分钟缓存。
 
 例如：“这里天气怎么样？”、“东京现在多少度？”或“比较深圳和伦敦的天气”。当前工具仅查询实时天气，不能用它推断未来预报。
 
-当前为本地单用户应用，`auto:ip` 使用本机后端的公网出口 IP；VPN/代理会影响定位，远程部署时需传入访问者 IP。定位不是精确 GPS。UI 隐藏旧城市/时区设置，保留已有设置数据以兼容历史记录。
+客户端通过 ipify 获取公网 IP 并交给后端查询 WeatherAPI；VPN/代理会影响定位，定位不是精确 GPS。IP 查询失败时需要指定城市。UI 隐藏旧城市/时区设置，保留已有设置数据以兼容历史记录。
 
 实现参考：[WeatherAPI 参数](https://www.weatherapi.com/docs/request-parameters/)、[OpenRouter weather tool 示例](https://openrouter.ai/docs/agent-sdk/call-model/examples/weather-tool)。保留现有 Mastra Agent 和工具调用链，无需引入另一套 Agent SDK。
 

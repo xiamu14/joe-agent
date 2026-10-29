@@ -1,10 +1,11 @@
 import { desktopExecutor } from './desktop';
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { RequestContext } from '@mastra/core/request-context';
 import type { MastraDBMessage } from '@mastra/core/memory';
 import { chatSchema, fallbackExpression, answerSchema, expressionSchema } from './schema';
 import { store, type Message } from './store';
+import { widgetStore } from './widget-runtime';
 import { modelById, configured } from './config';
 import { joeAgent, sourceSchema } from './agent';
 import { resourceId, joeMemory } from './memory';
@@ -39,7 +40,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
   };
   const user: Message = {
     ...common,
-    id: randomUUID(),
+    id: nanoid(),
     role: 'user',
     text: input.text,
     status: 'complete',
@@ -47,7 +48,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
   };
   const answer: Message = {
     ...common,
-    id: randomUUID(),
+    id: nanoid(),
     role: 'assistant',
     text: '',
     status: 'streaming',
@@ -115,6 +116,32 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         emit('state', { state: 'thinking' });
         const requestContext = new RequestContext();
         requestContext.set('model', model.id);
+        if (input.clientIp) requestContext.set('client.ip', input.clientIp);
+        if (!input.desktop) requestContext.set('canvas.enabled', true);
+        if (!input.desktop) requestContext.set('widget.present', (card: 'costs' | 'settings' | 'weather' | 'video', visible: boolean) => {
+          signal.throwIfAborted();
+          return widgetStore.presentBuiltin(widgetStore.canvasForSession(input.sessionId), card, visible);
+        });
+        if (!input.desktop) requestContext.set('weather.begin', () => {
+          const canvas = widgetStore.canvasForSession(input.sessionId);
+          const instance = widgetStore.snapshot(canvas).instances.find((item: { widgetType: string }) => item.widgetType === 'builtin.weather');
+          const revision = instance?.revision ?? 0;
+          return (data: unknown) => {
+            signal.throwIfAborted();
+            const instance = widgetStore.presentData(canvas, 'weather', data, revision);
+            return { instance, resource: widgetStore.snapshot(canvas).resources.find((item: { resourceId: string }) => item.resourceId === instance.bindings.data.resourceId) };
+          };
+        });
+        if (!input.desktop) requestContext.set('video.begin', () => {
+          const canvas = widgetStore.canvasForSession(input.sessionId);
+          const instance = widgetStore.snapshot(canvas).instances.find((item: { widgetType: string }) => item.widgetType === 'youtube.video');
+          const revision = instance?.revision ?? 0;
+          return (data: unknown) => {
+            signal.throwIfAborted();
+            const instance = widgetStore.presentData(canvas, 'video', data, revision);
+            return { instance, resource: widgetStore.snapshot(canvas).resources.find((item: { resourceId: string }) => item.resourceId === instance.bindings.data.resourceId) };
+          };
+        });
         if (input.desktop) {
           requestContext.set('desktop.state', JSON.stringify(input.desktop));
           requestContext.set('desktop.execute', desktopExecutor(input.sessionId, input.turnId, signal, emit));
@@ -147,6 +174,20 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
             }
             if (chunk.type === 'tool-result') {
               emit('state', { state: 'thinking' });
+              if (chunk.payload.toolName === 'presentWidget') {
+                const result = z.object({ ok: z.literal(true), card: z.enum(['costs', 'settings', 'weather', 'video']), instance: z.object({ instanceId: z.string(), widgetType: z.string(), visible: z.boolean(), revision: z.number() }).passthrough() }).safeParse(chunk.payload.result);
+                if (result.success) {
+                  emit('widget.snapshot', { instance: result.data.instance });
+                  if (result.data.instance.visible && (result.data.card === 'costs' || result.data.card === 'settings')) emit('card.open', { card: result.data.card });
+                }
+              }
+              if (chunk.payload.toolName === 'getWeather' || chunk.payload.toolName === 'searchYouTube') {
+                const result = z.object({ widget: z.object({ instance: z.record(z.string(), z.unknown()), resource: z.record(z.string(), z.unknown()) }) }).safeParse(chunk.payload.result);
+                if (result.success) {
+                  emit('resource.snapshot', { resource: result.data.widget.resource });
+                  emit('widget.snapshot', { instance: result.data.widget.instance });
+                }
+              }
               const found = z.object({ sources: z.array(sourceSchema) }).safeParse(chunk.payload.result);
               if (found.success) {
                 answer.sources = found.data.sources.map(({ title, url }) => ({
@@ -170,7 +211,6 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         if (!final.text.startsWith(answer.text))
           throw new Error('Structured output changed its streamed prefix');
         update(final);
-        if (final.card) emit('card.open', { card: final.card });
 
         if (!answer.text.trim()) throw new Error('模型未返回正文');
         const usage = await result.totalUsage;

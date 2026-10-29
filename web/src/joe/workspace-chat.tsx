@@ -62,9 +62,9 @@ export function WorkspaceChat({ joe, onSpeakingChange, orbState }: { joe: Return
       <motion.div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-5 backdrop-blur-md [mask-image:linear-gradient(to_top,transparent,black)] xl:h-7" />
       <motion.div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-5 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black)] xl:h-7" />
       </motion.div>
-      {orbState && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex shrink-0 justify-center pt-5">
+      <AnimatePresence>{orbState && <motion.div key="chat-orb" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex shrink-0 justify-center pt-5">
         <Shdr01 size={60} state={orbState} className="max-w-full" ariaLabel={`Joe 光球 · ${orbState}`} />
-      </motion.div>}
+      </motion.div>}</AnimatePresence>
     </motion.aside>
   );
 }

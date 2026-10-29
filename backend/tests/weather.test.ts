@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { currentWeather, weather } from '../src/joe/weather';
 import { getWeather } from '../src/joe/weather-tool';
+import { RequestContext } from '@mastra/core/request-context';
 const fixture = {
   location: { name: 'Shenzhen', region: 'Guangdong', country: 'China', tz_id: 'Asia/Shanghai' },
   current: {
@@ -30,7 +31,7 @@ test('IP weather and city tool share WeatherAPI, cache results and hide credenti
     return Response.json(fixture);
   };
   try {
-    const result = await currentWeather();
+    const result = await currentWeather('8.8.8.8');
     assert.equal(result.temperature, 25);
     assert.equal(result.condition, '多云');
     assert.equal(result.minimum, 20);
@@ -42,11 +43,15 @@ test('IP weather and city tool share WeatherAPI, cache results and hide credenti
     assert.equal(result.timezone, 'Asia/Shanghai');
     assert.equal(result.updatedAt, 1792700000000);
     assert.doesNotMatch(JSON.stringify(result), /secret-key/);
-    assert.deepEqual(await currentWeather(), result);
+    assert.deepEqual(await currentWeather('8.8.8.8'), result);
+    const requestContext = new RequestContext();
+    requestContext.set('client.ip', '8.8.4.4');
+    const local = await getWeather.execute!({}, { requestContext } as never);
+    assert.equal(local.place, 'Shenzhen · Guangdong · China');
     const toolResult = await getWeather.execute!({ city: '东京，日本 & test' }, {} as never);
     assert.equal(toolResult.temperature, 25);
-    assert.deepEqual(queries, ['auto:ip', '东京，日本 & test']);
-    await assert.rejects(currentWeather(AbortSignal.abort()), { name: 'AbortError' });
+    assert.deepEqual(queries, ['8.8.8.8', '8.8.4.4', '东京，日本 & test']);
+    await assert.rejects(currentWeather('8.8.8.8', AbortSignal.abort()), { name: 'AbortError' });
   } finally {
     globalThis.fetch = original;
     if (key === undefined) delete process.env.WEATHER_API_KEY;
@@ -59,7 +64,7 @@ test('configuration, bad city, quota, malformed response and network failure are
   try {
     delete process.env.WEATHER_API_KEY;
     globalThis.fetch = async () => assert.fail('must not call without key');
-    assert.deepEqual(await currentWeather(), { configured: false });
+    assert.deepEqual(await currentWeather('8.8.8.8'), { configured: false });
     process.env.WEATHER_API_KEY = 'test';
     for (const [code, message] of [
       [1006, /未找到地点/],
@@ -77,6 +82,8 @@ test('configuration, bad city, quota, malformed response and network failure are
     };
     await assert.rejects(weather('invalid-location'), /^Error: 天气查询失败，请稍后重试$/);
     await assert.rejects(weather(' '));
+    await assert.rejects(currentWeather(undefined), /指定城市/);
+    await assert.rejects(currentWeather('not-an-ip'), /指定城市/);
   } finally {
     globalThis.fetch = original;
     if (key === undefined) delete process.env.WEATHER_API_KEY;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isIP } from 'node:net';
 
 const CACHE_MS = 15 * 60_000;
 const responseSchema = z.object({
@@ -90,7 +91,7 @@ export async function weather(location: string, signal?: AbortSignal): Promise<W
   }
 }
 
-// shortcut: IP location uses the local backend’s public egress; pass visitor IP when deploying remotely.
-export function currentWeather(signal?: AbortSignal) {
-  return weather('auto:ip', signal);
+export async function currentWeather(clientIp: string | undefined, signal?: AbortSignal) {
+  if (!clientIp || !isIP(clientIp)) throw new Error('无法获取当前位置，请指定城市');
+  return weather(clientIp, signal);
 }

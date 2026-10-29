@@ -39,9 +39,5 @@ test('default input mute is backwards compatible and card requests are bounded',
   assert.equal(settingsSchema.parse({ defaultMuted: true }).defaultMuted, true);
   assert.throws(() => settingsSchema.parse({ defaultMuted: 'true' }));
   const answer = { expression: { emotion: 'calm', intensity: 0.3 }, text: 'Here is the information.' };
-  assert.equal(answerSchema.parse(answer).card, undefined);
-  assert.equal(answerSchema.parse({ ...answer, card: 'costs' }).card, 'costs');
-  assert.throws(() => answerSchema.parse({ ...answer, card: 'time' }));
-  assert.throws(() => answerSchema.parse({ ...answer, card: 'video' }));
-  assert.throws(() => answerSchema.parse({ ...answer, card: 'background' }));
+  assert.deepEqual(answerSchema.parse({ ...answer, card: 'costs' }), answer);
 });

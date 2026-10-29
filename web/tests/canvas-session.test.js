@@ -6,12 +6,12 @@ import { chatTurns } from '../src/joe/chat-turns.ts';
 test('each canvas keeps its own session across reloads and replaces invalid IDs', () => {
   const data = new Map();
   const storage = { getItem: key => data.get(key), setItem: (key, value) => data.set(key, value) };
-  const first = '12345678-1234-4234-8234-123456789abc';
-  const second = '87654321-1234-4234-8234-123456789abc';
+  const first = 'V1StGXR8_Z5jdHi6B-myT';
+  const second = 'Uakgb_J5m9g-0JDMbcJqL';
   assert.equal(canvasSessionId(storage, 'example', () => first), first);
   assert.equal(canvasSessionId(storage, 'empty', () => second), second);
   assert.equal(canvasSessionId(storage, 'example', () => { throw new Error('must reuse session'); }), first);
-  storage.setItem('example', 'invalid');
+  storage.setItem('example', '12345678-1234-4234-8234-123456789abc');
   assert.equal(canvasSessionId(storage, 'example', () => first), first);
 });
 

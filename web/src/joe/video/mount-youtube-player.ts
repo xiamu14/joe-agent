@@ -12,7 +12,7 @@ type Callbacks = {
   onAutoplayBlocked(): void;
 };
 
-export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks) {
+export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks, selectedId = videoId) {
   let cancelled = false;
   let instance: YouTubePlayer | undefined;
   const target = document.createElement('div');
@@ -21,7 +21,7 @@ export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks)
   void loadYouTubeApi().then(api => {
     if (cancelled) return;
     instance = new api.Player(target, {
-      videoId, width: '100%', height: '100%',
+      videoId: selectedId, width: '100%', height: '100%',
       playerVars: { origin: window.location.origin, playsinline: 1, controls: 1, rel: 0 },
       events: {
         onReady(event) {

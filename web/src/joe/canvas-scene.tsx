@@ -3,10 +3,11 @@ import { useMotionValue } from 'motion/react';
 import { createCardHoverIntent } from './card-hover-intent';
 import type { CanvasSnapshot } from './canvas-storage';
 import type { CanvasCardId, CanvasLayout } from './canvas-layout';
+import type { WidgetCard } from './widget-visibility';
 
 type Selection = { id: CanvasCardId; expanded: boolean } | null;
 
-export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnapshot['pan'], onSave: (snapshot: CanvasSnapshot) => void) {
+export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnapshot['pan'], onSave: (snapshot: CanvasSnapshot) => void, onRemove?: (id: WidgetCard) => void) {
   const canvas = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Selection>(null);
   const [foreground, setForeground] = useState<CanvasCardId | null>(null);
@@ -29,11 +30,12 @@ export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnap
     setForeground(id);
     setSelection(current => current ?? { id, expanded: true });
   }, [panX, panY, dragging]);
+  const dismiss = useCallback((id: CanvasCardId) => setSelection(current => current?.id === id ? null : current), []);
   const close = useCallback(() => setSelection(current => current ? { ...current, expanded: false } : current), []);
   const finishClose = useCallback((id: CanvasCardId) => {
     setSelection(current => current?.id === id && !current.expanded ? null : current);
   }, []);
-  return { canvas, layout, selection, hovered, hoverIntent, foreground, setForeground, dragging, setDragging, suppressClick, save, moveCard, setHovered, panX, panY, open, close, finishClose };
+  return { canvas, layout, selection, hovered, hoverIntent, foreground, setForeground, dragging, setDragging, suppressClick, save, moveCard, setHovered, panX, panY, open, close, dismiss, finishClose, onRemove };
 }
 
 export type CanvasScene = ReturnType<typeof useCanvasSceneState>;

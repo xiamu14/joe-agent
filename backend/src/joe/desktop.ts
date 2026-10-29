@@ -1,6 +1,7 @@
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { createTool } from '@mastra/core/tools';
+import { idSchema } from './id';
 
 export const desktopStateSchema = z.object({
   cards: z.array(z.enum(['video', 'web'])).max(2),
@@ -18,7 +19,7 @@ export const desktopActionSchema = z.object({
 type Action = z.infer<typeof desktopActionSchema>;
 const pending = new Map<string, { session: string; turn: string; finish: (result: unknown) => void }>();
 export const desktopResultSchema = z.object({
-  sessionId: z.string().uuid(), turnId: z.string().uuid(), id: z.string().uuid(),
+  sessionId: idSchema, turnId: idSchema, id: idSchema,
   ok: z.boolean(), detail: z.string().max(500), state: desktopStateSchema,
 });
 export function finishDesktopAction(body: unknown) {
@@ -33,7 +34,7 @@ export function desktopExecutor(session: string, turn: string, signal: AbortSign
   return async (input: Action) => {
     const command = desktopActionSchema.parse(input);
     signal.throwIfAborted();
-    const id = randomUUID();
+    const id = nanoid();
     return new Promise<unknown>((resolve) => {
       const finish = (result: unknown) => {
         clearTimeout(timer); signal.removeEventListener('abort', abort); pending.delete(id); resolve(result);

@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { clearLegacySessions } from '../src/joe/clear-legacy-sessions';
+
+test('removes old session and memory but keeps new sessions and account data', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'joe-reset-'));
+  const oldId = '12345678-1234-4234-8234-123456789abc', newId = 'V1StGXR8_Z5jdHi6B-myT';
+  const memoryPath = join(directory, 'mastra.db');
+  const memory = new DatabaseSync(memoryPath);
+  memory.exec('CREATE TABLE mastra_threads(id TEXT PRIMARY KEY); CREATE TABLE mastra_messages(id TEXT,thread_id TEXT); CREATE TABLE mastra_thread_state(threadId TEXT);');
+  memory.prepare('INSERT INTO mastra_threads VALUES (?)').run(`joe:${oldId}`);
+  memory.prepare('INSERT INTO mastra_messages VALUES (?,?)').run('m', `joe:${oldId}`);
+  memory.close();
+  const db = new DatabaseSync(join(directory, 'joe.sqlite'));
+  db.exec('CREATE TABLE sessions(id TEXT PRIMARY KEY); CREATE TABLE messages(id TEXT,session TEXT); CREATE TABLE attachments(id TEXT,session TEXT); CREATE TABLE settings(data TEXT); CREATE TABLE usage(id TEXT);');
+  db.prepare('INSERT INTO sessions VALUES (?)').run(oldId); db.prepare('INSERT INTO sessions VALUES (?)').run(newId);
+  db.prepare('INSERT INTO messages VALUES (?,?)').run('old', oldId);
+  db.prepare('INSERT INTO attachments VALUES (?,?)').run('attachment', oldId);
+  db.exec("INSERT INTO settings VALUES ('settings'); INSERT INTO usage VALUES ('cost');");
+  clearLegacySessions(db, memoryPath);
+  assert.deepEqual(db.prepare('SELECT id FROM sessions').all().map(row => row.id), [newId]);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM messages').get()?.n, 0);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM attachments').get()?.n, 0);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM settings').get()?.n, 1);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM usage').get()?.n, 1);
+  const check = new DatabaseSync(memoryPath);
+  assert.equal(check.prepare('SELECT COUNT(*) AS n FROM mastra_messages').get()?.n, 0);
+  assert.equal(check.prepare('SELECT COUNT(*) AS n FROM mastra_threads').get()?.n, 0);
+  check.close(); db.close(); rmSync(directory, { recursive: true, force: true });
+});

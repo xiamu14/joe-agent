@@ -9,12 +9,17 @@ import { CanvasPreview } from './workspace-preview';
 import { WorkspaceInput } from './workspace-input';
 import { loadCanvas, saveCanvas, type CanvasSnapshot } from './canvas-storage';
 import { createCanvasLayout } from './canvas-layout';
+import { visibleWidgetCards, type WidgetCard } from './widget-visibility';
+
+const initialCards: readonly WidgetCard[] = ['video', 'weather', 'costs', 'settings'];
+const noCards: readonly WidgetCard[] = [];
 
 export function StaticWorkspace() {
   const [view, setView] = useState(0);
-  const example = useJoe({ sessionKey: 'joe.canvas.example.session' });
-  const empty = useJoe({ sessionKey: 'joe.canvas.empty.session' });
-  const joe = view === 0 ? example : empty;
+  const first = useJoe({ sessionKey: 'joe.canvas.example.session', initialCards });
+  const second = useJoe({ sessionKey: 'joe.canvas.empty.session', initialCards: noCards });
+  const joe = [first, second][view];
+  const hasCards = visibleWidgetCards(joe.widgetVisibility).length > 0;
   const [speech, setSpeech] = useState([false, false]);
   const onSpeakingChange = useCallback((playing: boolean) => {
     setSpeech(previous => previous.map((value, index) => index === view ? playing : value));
@@ -47,14 +52,14 @@ export function StaticWorkspace() {
           </motion.aside>
           <motion.section className="flex min-h-0 flex-col gap-y-1 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid lg:grid-rows-subgrid" aria-label="画布与输入">
             <motion.div className="relative flex min-h-[540px] flex-1 items-center justify-center lg:min-h-0" aria-label="画布">
-              {snapshot && <CanvasPreview key={view} layout={snapshot.cards} initialPan={snapshot.pan} onSave={rememberCanvas} joe={joe} example={view === 0}
-                emptyContent={<motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex h-full w-full items-center justify-center pb-10">
+              {snapshot && <CanvasPreview key={view} layout={snapshot.cards} initialPan={snapshot.pan} onSave={rememberCanvas} joe={joe}
+                emptyContent={<motion.div key="canvas-orb" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex h-full w-full items-center justify-center pb-10">
                   <Shdr01 size={280} state={orbState} className="max-h-full max-w-full" ariaLabel={`SHDR-01 光球 · ${orbState}`} />
                 </motion.div>} /> }
             </motion.div>
             <WorkspaceInput key={`${view}-${joe.sessionId}`} text={drafts[view]} onTextChange={setDraft} onSend={joe.send} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} />
           </motion.section>
-          <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} orbState={view === 0 ? orbState : undefined} />
+          <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} orbState={hasCards ? orbState : undefined} />
         </motion.div>
       </motion.main>
     </MotionConfig>

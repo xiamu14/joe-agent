@@ -94,6 +94,8 @@ export type AgentEvent = {
   assistant?: Message;
   sources?: { title: string; url: string }[];
   card?: 'costs' | 'settings';
+  instance?: unknown;
+  resource?: unknown;
 };
 
 export type VoiceAccount = {

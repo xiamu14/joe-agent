@@ -1,6 +1,6 @@
 import { speechMarkdown } from './speech-markdown';
 import { trackGeneration } from './usage-sync';
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { Agent } from '@mastra/core/agent';
 import { z } from 'zod';
 import { conversationMessages } from './conversations';
@@ -56,7 +56,7 @@ Translate only the answer, not the user messages. Preserve meaning, tone, names,
 If the answer is already in the chosen language, return it unchanged. Do not answer the question again.
 ${input.purpose === 'translation' ? 'This request is a reading aid, not speech. For auto, override the earlier auto rule: translate English into Chinese or Chinese into English, choosing the opposite of the supplied answer\'s dominant language. Translate the supplied answer only, even if it is a question; never answer it.' : ''}`,
   });
-  const id = randomUUID();
+  const id = nanoid();
   const signal = AbortSignal.any([requestSignal, AbortSignal.timeout(60000)]);
   store.usage(id, 'llm', model.id, null, null, null, 'pending');
   let measured = false;

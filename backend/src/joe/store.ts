@@ -3,8 +3,9 @@ import { dataDirectory } from './data-directory';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { dayKey, settingsSchema, type Expression } from './schema';
+import { clearLegacySessions } from './clear-legacy-sessions';
 
 export type Message = {
   id: string;
@@ -37,6 +38,7 @@ export class Store {
         complete INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(provider,reference));
       CREATE TABLE IF NOT EXISTS runtime (id INTEGER PRIMARY KEY CHECK(id=1), milliseconds INTEGER NOT NULL);
       INSERT OR IGNORE INTO runtime VALUES (1,0);`);
+    if (filename !== ':memory:') clearLegacySessions(this.db, resolve(dirname(filename), 'mastra.db'));
     this.db.prepare("UPDATE usage SET status='interrupted' WHERE status='pending'").run();
     // An interrupted process must not leave persisted messages marked as streaming.
     for (const row of this.db.prepare('SELECT id,data FROM messages').all()) {
@@ -52,7 +54,7 @@ export class Store {
       if (greet) this.ensureGreeting(id);
       return id;
     }
-    const next = randomUUID();
+    const next = nanoid();
     this.db.exec('BEGIN');
     try {
       this.db.prepare('INSERT INTO sessions VALUES (?,?)').run(next, Date.now());
@@ -108,7 +110,7 @@ export class Store {
   }
   attach(session: string, name: string, text: string) {
     this.requireSession(session);
-    const id = randomUUID();
+    const id = nanoid();
     this.db.prepare('INSERT INTO attachments VALUES (?,?,?,?)').run(id, session, name, text);
     return { id, name };
   }

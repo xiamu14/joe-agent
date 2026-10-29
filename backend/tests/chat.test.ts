@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +21,7 @@ const { conversationMessages } = await import('../src/joe/conversations');
 const { joeAgent } = await import('../src/joe/agent');
 const { chat, cancelTurn } = await import('../src/joe/chat');
 const { store } = await import('../src/joe/store');
+const { widgetStore } = await import('../src/joe/widget-runtime');
 const { loadModels } = await import('../src/joe/config');
 
 test('Mastra streams through the configured adapter and persists expression and usage', async () => {
@@ -68,7 +69,7 @@ test('Mastra streams through the configured adapter and persists expression and 
   };
   try {
     const sessionId = store.session(),
-      turnId = randomUUID();
+      turnId = nanoid();
     const response = await chat(
       { sessionId, turnId, text: '你好', model: 'openai/test' },
       new AbortController().signal,
@@ -85,7 +86,7 @@ test('Mastra streams through the configured adapter and persists expression and 
     assert.equal(completed.message.status, 'complete', JSON.stringify(events));
     assert.equal(completed.message.text, '你好。');
     assert.equal(completed.message.expression.emotion, 'joy');
-    assert.deepEqual(events.find(e => e.type === 'card.open'), { type: 'card.open', sessionId, turnId, card: 'costs' });
+    assert.equal(events.some(e => e.type === 'card.open'), false, 'final answer cannot control cards');
     assert.equal(store.messages(sessionId).length, 0, 'new messages must not duplicate into Joe SQLite');
     assert.equal((await conversationMessages(sessionId)).length, 2);
     assert.equal((await conversationMessages(sessionId))[1].text, '你好。');
@@ -96,7 +97,7 @@ test('Mastra streams through the configured adapter and persists expression and 
       /已提交/,
     );
     const second = await chat(
-      { sessionId, turnId: randomUUID(), text: '继续', model: 'anthropic/test' },
+      { sessionId, turnId: nanoid(), text: '继续', model: 'anthropic/test' },
       new AbortController().signal,
     );
     const secondText = await second.text();
@@ -132,12 +133,12 @@ test('plain text model output remains a usable answer', async () => {
   try {
     const sessionId = store.session();
     const events: any[] = [];
-    await readEvents(await chat({ sessionId, turnId: randomUUID(), text: '搜索视频', model: 'openai/test' }, new AbortController().signal), e => events.push(e));
+    await readEvents(await chat({ sessionId, turnId: nanoid(), text: '搜索视频', model: 'openai/test' }, new AbortController().signal), e => events.push(e));
     assert.equal(events.at(-1).message.status, 'complete');
     assert.equal(events.at(-1).message.text, '我暂时不能搜索视频。');
     assert.equal((await conversationMessages(sessionId))[1].text, '我暂时不能搜索视频。');
     const next: any[] = [];
-    await readEvents(await chat({ sessionId, turnId: randomUUID(), text: '继续', model: 'openai/test' }, new AbortController().signal), e => next.push(e));
+    await readEvents(await chat({ sessionId, turnId: nanoid(), text: '继续', model: 'openai/test' }, new AbortController().signal), e => next.push(e));
     assert.equal(next.at(-1).message.status, 'complete');
     assert.match(requests[1], /我暂时不能搜索视频/);
   } finally { globalThis.fetch = original; }
@@ -153,7 +154,7 @@ test('invalid structured output fails without leaking JSON into restored history
   try {
     const sessionId = store.session();
     const response = await chat(
-      { sessionId, turnId: randomUUID(), text: 'bad output', model: 'openai/test' },
+      { sessionId, turnId: nanoid(), text: 'bad output', model: 'openai/test' },
       new AbortController().signal,
     );
     const events: any[] = [];
@@ -190,14 +191,14 @@ test(
       );
     try {
       const sessionId = store.session(),
-        turnId = randomUUID();
+        turnId = nanoid();
       const response = await chat(
         { sessionId, turnId, text: 'cancel me', model: 'openai/test' },
         new AbortController().signal,
       );
       await assert.rejects(
         chat(
-          { sessionId, turnId: randomUUID(), text: 'concurrent', model: 'openai/test' },
+          { sessionId, turnId: nanoid(), text: 'concurrent', model: 'openai/test' },
           new AbortController().signal,
         ),
         /仍在回答/,
@@ -256,7 +257,7 @@ test('native tools coexist with structured output and preserve sources in Memory
   try {
     const sessionId = store.session();
     const response = await chat(
-      { sessionId, turnId: randomUUID(), text: '检索 Joe 文档', model: 'openai/test' },
+      { sessionId, turnId: nanoid(), text: '检索 Joe 文档', model: 'openai/test' },
       new AbortController().signal,
     );
     const events: any[] = [];
@@ -287,9 +288,11 @@ test('agent invokes city weather tool before producing its final answer', async 
           feelslike_c: 23,
           humidity: 60,
           wind_kph: 10,
-          condition: { text: '多云' },
+          condition: { text: '多云', code: 1003 },
+          is_day: 1,
           last_updated_epoch: 1792700000,
         },
+        forecast: { forecastday: [{ date: '2026-10-28', day: { mintemp_c: 18 }, astro: { sunrise: '06:00 AM', sunset: '06:00 PM' } }] },
       });
     }
     llmCalls++;
@@ -313,14 +316,14 @@ test('agent invokes city weather tool before producing its final answer', async 
             },
             null,
           ) + frame({}, 'tool_calls')
-        : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"东京目前多云，22°C。"}') +
+        : modelFrame('东京目前多云，22°C。') +
           frame({}, 'stop');
     return new Response(body + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
   };
   try {
     const sessionId = store.session();
     const response = await chat(
-      { sessionId, turnId: randomUUID(), text: '东京天气怎么样？', model: 'openai/test' },
+      { sessionId, turnId: nanoid(), text: '东京天气怎么样？', model: 'openai/test' },
       new AbortController().signal,
     );
     const events: any[] = [];
@@ -330,9 +333,67 @@ test('agent invokes city weather tool before producing its final answer', async 
     assert.ok(events.some((event) => event.state === 'tool-running'));
     assert.equal(events.at(-1).message.status, 'complete');
     assert.equal(events.at(-1).message.text, '东京目前多云，22°C。');
+    const canvas = widgetStore.canvasForSession(sessionId);
+    const snapshot = widgetStore.snapshot(canvas);
+    const card = snapshot.instances.find((item: any) => item.widgetType === 'builtin.weather');
+    assert.equal(card.visible, true);
+    assert.equal(snapshot.resources.find((item: any) => item.resourceId === card.bindings.data.resourceId).data.temperature, 22);
+    assert.ok(widgetStore.events(canvas, 0).some((event: any) => event.type === 'widget.snapshot'));
+    assert.ok(widgetStore.events(canvas, 0).some((event: any) => event.type === 'resource.snapshot'));
+    assert.equal(events.find((event: any) => event.type === 'widget.snapshot')?.instance.widgetType, 'builtin.weather');
+    assert.equal(events.find((event: any) => event.type === 'resource.snapshot')?.resource.data.temperature, 22);
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test('widget tool result opens a card before the final answer', async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    const frame = (delta: unknown, reason: string | null) =>
+      `data: ${JSON.stringify({ id: 'widget-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
+    const body = calls % 2 === 1
+      ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: `widget-call-${calls}`, type: 'function', function: { name: 'presentWidget', arguments: JSON.stringify({ card: 'costs', visible: calls === 1 }) } }] }, null) + frame({}, 'tool_calls')
+      : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"已显示费用。"}') + frame({}, 'stop');
+    return new Response(body + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    const sessionId = store.session(), turnId = nanoid();
+    const events: any[] = [];
+    await readEvents(await chat({ sessionId, turnId, text: '显示费用', model: 'openai/test' }, new AbortController().signal), e => events.push(e));
+    assert.deepEqual(events.find(e => e.type === 'card.open'), { type: 'card.open', sessionId, turnId, card: 'costs' });
+    assert.ok(events.findIndex(e => e.type === 'card.open') < events.findIndex(e => e.type === 'message.completed'));
+    assert.equal(events.at(-1).message.status, 'complete');
+    const hidden: any[] = [];
+    await readEvents(await chat({ sessionId, turnId: nanoid(), text: '隐藏费用', model: 'openai/test' }, new AbortController().signal), e => hidden.push(e));
+    const shownInstance = events.find(e => e.type === 'widget.snapshot').instance;
+    const hiddenInstance = hidden.find(e => e.type === 'widget.snapshot').instance;
+    assert.equal(hiddenInstance.visible, false);
+    assert.equal(hiddenInstance.instanceId, shownInstance.instanceId);
+    assert.equal(hidden.some(e => e.type === 'card.open'), false);
+  } finally { globalThis.fetch = original; }
+});
+
+test('video search delivers resource and visible card in tool result', async () => {
+  const original = globalThis.fetch, key = process.env.YOUTUBE_API_KEY;
+  process.env.YOUTUBE_API_KEY = 'test-key';
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    if (String(url).startsWith('https://www.googleapis.com/')) return Response.json({ items: [{ id: { videoId: 'BagZ55ac4xs' }, snippet: { title: 'Jazz', channelTitle: 'Music' } }] });
+    calls++;
+    const frame = (delta: unknown, reason: string | null) => `data: ${JSON.stringify({ id: 'video-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
+    const content = calls === 1 ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: 'video-call', type: 'function', function: { name: 'searchYouTube', arguments: '{"query":"jazz"}' } }] }, null) + frame({}, 'tool_calls') : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"找到了。"}') + frame({}, 'stop');
+    return new Response(content + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    const events: any[] = [];
+    await readEvents(await chat({ sessionId: store.session(), turnId: nanoid(), text: '搜索爵士视频', model: 'openai/test' }, new AbortController().signal), event => events.push(event));
+    assert.equal(events.find(event => event.type === 'widget.snapshot')?.instance.widgetType, 'youtube.video');
+    assert.equal(events.find(event => event.type === 'resource.snapshot')?.resource.data.videos[0].title, 'Jazz');
+    assert.equal(events.at(-1).message.status, 'complete');
+  } finally { globalThis.fetch = original; if (key === undefined) delete process.env.YOUTUBE_API_KEY; else process.env.YOUTUBE_API_KEY = key; }
 });
 
 test.after(async () => {

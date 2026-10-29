@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -26,7 +26,7 @@ const { settingsSchema } = await import('../src/joe/schema');
 
 function conversation(user: string, answer: string, status = 'complete') {
   const sessionId = store.session(),
-    turnId = randomUUID();
+    turnId = nanoid();
   const common = {
     sessionId,
     turnId,
@@ -37,8 +37,8 @@ function conversation(user: string, answer: string, status = 'complete') {
     createdAt: Date.now(),
   };
   const messages: Message[] = [
-    { ...common, id: randomUUID(), role: 'user', text: user },
-    { ...common, id: randomUUID(), role: 'assistant', text: answer },
+    { ...common, id: nanoid(), role: 'user', text: user },
+    { ...common, id: nanoid(), role: 'assistant', text: answer },
   ];
   messages.forEach((message) => store.saveMessage(message));
   return { sessionId, turnId };
@@ -67,7 +67,7 @@ test('per-message reading translations support both roles without configured TTS
       const result = await prepareSpeech({ ...ids, messageId: message.id, language: 'auto', purpose: 'translation' }, new AbortController().signal);
       assert.deepEqual(result, { language: 'zh', text: '中文译文' });
     }
-    await assert.rejects(prepareSpeech({ ...ids, messageId: randomUUID(), language: 'auto', purpose: 'translation' }, new AbortController().signal), /未完成/);
+    await assert.rejects(prepareSpeech({ ...ids, messageId: nanoid(), language: 'auto', purpose: 'translation' }, new AbortController().signal), /未完成/);
     await assert.rejects(prepareSpeech({ ...ids, sessionId: store.session(), messageId: store.messages(ids.sessionId)[0].id, language: 'auto', purpose: 'translation' }, new AbortController().signal), /未完成/);
   } finally {
     Agent.prototype.generate = original;

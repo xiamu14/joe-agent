@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { SettingsPanel } from '../components/panels/settings-panel';
 import { VoiceAccountPanel, money } from '../components/panels/voice-account-panel';
 import { TiltCard } from './tilt-card';
@@ -11,7 +11,7 @@ export type AccountCardProps = Pick<ReturnType<typeof useJoe>, 'bootstrap' | 'sa
 export function AccountCards({ cards, ...joe }: AccountCardProps & { cards: OrdinaryCard[] }) {
   const scene = useCanvasScene();
   const model = joe.bootstrap?.models.find(model => model.id === joe.bootstrap?.settings.model) ?? joe.bootstrap?.models[0];
-  return cards.map(id => {
+  return <AnimatePresence initial={false}>{cards.map(id => {
     const expanded = scene.selection?.id === id && scene.selection.expanded;
     const title = id === 'costs' ? '费用' : '设置';
     return <TiltCard key={id} id={id} label={`${title}卡片`} expandedWidth="min(480px, calc(100% - 32px))" surfaceClassName={`overflow-hidden rounded-[26px] text-white ${id === 'costs' ? 'bg-[#7928f5]' : 'bg-[#232323]'}`}>
@@ -33,5 +33,5 @@ export function AccountCards({ cards, ...joe }: AccountCardProps & { cards: Ordi
           </>}
         </motion.div>}
     </TiltCard>;
-  });
+  })}</AnimatePresence>;
 }

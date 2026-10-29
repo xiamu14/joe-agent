@@ -3,6 +3,8 @@ import { registerApiRoute, type ContextWithMastra as Context } from '@mastra/cor
 import { z } from 'zod';
 import { configured, models, modelById } from './config';
 import { store } from './store';
+import { widgetStore } from './widget-runtime';
+import { widgetEventStream } from './widget-events';
 import { idSchema, settingsSchema } from './schema';
 import { chat, cancelTurn } from './chat';
 import { synthesize, transcribe, startVoiceInput } from './voice';
@@ -96,9 +98,25 @@ export const routes = [
     return c.json(store.saveSettings(value));
   }),
   route('/session', 'POST', async (c) => {
-    const body = z.object({ id: idSchema.optional() }).parse(await json(c));
+    const body = z.object({ id: idSchema.optional(), initialCards: z.array(z.enum(['costs', 'settings', 'weather', 'video'])).max(4).default([]) }).parse(await json(c));
     const id = store.session(body.id, true);
-    return c.json({ id, created: id !== body.id, messages: await conversationMessages(id) });
+    const canvasId = widgetStore.canvasForSession(id);
+    widgetStore.initializeCanvas(canvasId, body.initialCards);
+    const widgets = widgetStore.snapshot(canvasId);
+    return c.json({ id, canvasId, widgets: widgets.instances, widgetResources: widgets.resources, widgetCursor: widgets.cursor, created: id !== body.id, messages: await conversationMessages(id) });
+  }),
+  route('/widget-visibility', 'POST', async (c) => {
+    const input = z.object({ sessionId: idSchema, card: z.enum(['costs', 'settings', 'weather', 'video']), visible: z.boolean() }).parse(await json(c));
+    store.requireSession(input.sessionId);
+    return c.json({ instance: widgetStore.presentBuiltin(widgetStore.canvasForSession(input.sessionId), input.card, input.visible) });
+  }),
+  route('/widget-events', 'GET', (c) => {
+    const sessionId = idSchema.parse(c.req.query('sessionId'));
+    store.requireSession(sessionId);
+    const canvasId = widgetStore.canvasForSession(sessionId);
+    const value = c.req.header('last-event-id') || c.req.query('cursor') || '0';
+    const cursor = z.coerce.number().int().nonnegative().safe().parse(value);
+    return widgetEventStream(widgetStore, canvasId, cursor, c.req.raw.signal);
   }),
   route('/voice-account', 'GET', async (c) => {
     c.header('Cache-Control', 'no-store');
@@ -108,7 +126,10 @@ export const routes = [
     await syncUsage();
     return c.json(store.summary(store.settings().timezone));
   }),
-  route('/weather', 'GET', async (c) => c.json(await currentWeather(c.req.raw.signal))),
+  route('/weather', 'POST', async (c) => {
+    const { clientIp } = z.object({ clientIp: z.string().max(45).optional() }).parse(await json(c));
+    return c.json(await currentWeather(clientIp, c.req.raw.signal));
+  }),
   route('/desktop-result', 'POST', async (c) => {
     finishDesktopAction(await json(c));
     return c.json({ ok: true });

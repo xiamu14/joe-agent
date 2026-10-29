@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { useEffect, useRef, useState } from 'react';
 import { useRecorder } from './use-recorder';
 import type { useJoe } from './use-joe';
@@ -16,7 +17,7 @@ export function useVoiceInput(joe: ReturnType<typeof useJoe>) {
     (text) => {
       const session = joe.sessionId;
       void joe.send(text, true).then(accepted => {
-        if (!accepted && currentSession.current === session) setUnsent(current => [...current, { id: crypto.randomUUID(), text }]);
+        if (!accepted && currentSession.current === session) setUnsent(current => [...current, { id: nanoid(), text }]);
       });
     },
     setState,

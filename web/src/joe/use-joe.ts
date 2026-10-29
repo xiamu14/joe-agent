@@ -1,7 +1,12 @@
+import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotionValue } from 'motion/react';
 import { api, jsonBody } from './api';
 import { canvasSessionId } from './session-storage';
+import { clientPublicIp } from './client-ip';
+import { applyWidgetSnapshot, type WidgetVisibility, type WidgetCard } from './widget-visibility';
+import { createWidgetDisplayGate } from './widget-display-gate';
+import { applyResourceSnapshot, type WidgetResources } from './widget-resource-state';
 import { readEvents, extractSpeech } from './stream';
 import { VoiceQueue } from './voice-queue';
 import { TextStream } from './text-stream';
@@ -16,7 +21,9 @@ import type {
   Usage,
 } from './types';
 
-export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolatedStream = false }: { sessionKey?: string; voiceOutput?: boolean; isolatedStream?: boolean } = {}) {
+const noInitialCards: readonly WidgetCard[] = [];
+
+export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCards, voiceOutput = true, isolatedStream = false }: { sessionKey?: string; initialCards?: readonly WidgetCard[]; voiceOutput?: boolean; isolatedStream?: boolean } = {}) {
   const textStream = useRef(new TextStream()).current;
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null),
     [messages, setMessages] = useState<Message[]>([]);
@@ -43,7 +50,15 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
   const cancellation = useRef<Promise<unknown> | undefined>(undefined);
   const turnVoice = useRef(false);
   const [voicePending, setVoicePending] = useState(false);
+  const [widgetCursor, setWidgetCursor] = useState(0);
+  const [widgetResources, setWidgetResources] = useState<WidgetResources>({});
+  const [widgetVisibility, setWidgetVisibility] = useState<WidgetVisibility>({});
   const [cardRequest, setCardRequest] = useState<{ card: NonNullable<AgentEvent['card']>; turnId: string } | null>(null);
+  const displayGate = useRef(createWidgetDisplayGate(event => {
+    if (event.type === 'widget.snapshot') setWidgetVisibility(current => applyWidgetSnapshot(current, event.instance));
+    if (event.type === 'resource.snapshot') setWidgetResources(current => applyResourceSnapshot(current, event.resource));
+    if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings') && event.turnId) setCardRequest({ card: event.card, turnId: event.turnId });
+  })).current;
   const uploadAbort = useRef<AbortController | null>(null),
     generation = useRef(0);
   const refreshUsage = useCallback(async () => {
@@ -55,14 +70,17 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
   const connect = useCallback(async (signal?: AbortSignal) => {
     try {
       const config = await api<Bootstrap>('/bootstrap', { signal });
-      const id = canvasSessionId(localStorage, sessionKey, () => crypto.randomUUID());
-      const session = await api<{ id: string; created?: boolean; messages: Message[] }>('/session', {
-        ...jsonBody({ id }),
+      const id = canvasSessionId(localStorage, sessionKey, () => nanoid());
+      const session = await api<{ id: string; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', {
+        ...jsonBody({ id, initialCards }),
         signal,
       });
       if (signal?.aborted || !mounted.current) return;
       localStorage.setItem(sessionKey, session.id);
+      setWidgetCursor(session.widgetCursor ?? 0);
       setSessionId(session.id);
+      setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
+      setWidgetVisibility((session.widgets ?? []).reduce<WidgetVisibility>(applyWidgetSnapshot, {}));
       setMessages(session.messages);
       setGreetingToPlay(session.created ? session.messages.find(m => m.kind === 'greeting')?.id || '' : '');
       settingsRef.current = config.settings;
@@ -74,8 +92,21 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       setState('offline');
       setError(e instanceof Error ? e.message : '无法连接 Joe 服务');
     }
-  }, [sessionKey]);
+  }, [sessionKey, initialCards]);
   useEffect(() => {
+    if (!sessionId) return;
+    const source = new EventSource(`/joe-api/widget-events?sessionId=${encodeURIComponent(sessionId)}&cursor=${widgetCursor}`);
+    const onWidget = (raw: Event) => {
+      try {
+        const event = JSON.parse((raw as MessageEvent).data);
+        if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot') displayGate.receive(event);
+      } catch { /* Ignore malformed events and retain the last valid snapshot. */ }
+    };
+    source.addEventListener('widget', onWidget);
+    return () => source.close();
+  }, [sessionId, widgetCursor, displayGate]);
+  useEffect(() => {
+    void clientPublicIp();
     mounted.current = true;
     const controller = new AbortController();
     voice.current = new VoiceQueue(
@@ -88,6 +119,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       (message) => {
         if (mounted.current) {
           turnVoice.current = false;
+          displayGate.release();
           setMessages((old) => old.map((m) => ({ ...m, visibleText: undefined })));
           setError(message);
         }
@@ -97,6 +129,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       },
       (turnId, end) => {
         if (!mounted.current || turn.current !== turnId) return;
+        if (end > 0) displayGate.release();
         setMessages(old => old.map(m => m.turnId === turnId && m.role === 'assistant'
           ? { ...m, visibleText: (m.speechText || '').slice(0, end) } : m));
       },
@@ -113,8 +146,9 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       clearInterval(poll);
       textStream.clear();
     };
-  }, [connect, refreshUsage, level]);
+  }, [connect, refreshUsage, level, displayGate]);
   function stop() {
+    displayGate.release();
     const old = turn.current;
     const streamed = textStream.snapshot();
     turn.current = '';
@@ -138,6 +172,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     setError('');
     if (!settings.voice) {
       turnVoice.current = false;
+      displayGate.release();
       speechAbort.current?.abort();
       voice.current?.stop();
       setMessages((old) => old.map((m) => ({ ...m, visibleText: undefined })));
@@ -160,7 +195,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     } finally {
       setSaving(false);
     }
-  }, [saving]);
+  }, [saving, displayGate]);
   async function send(text: string, spoken = false, validate?: () => Promise<boolean>) {
     if (uploading || !sessionId || (!text.trim() && !attachments.length)) return false;
     const model = settingsRef.current?.model || bootstrap?.models[0]?.id;
@@ -171,8 +206,9 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     if (busy || voice.current?.pending) stop();
     voice.current?.stop();
     voice.current?.unlock();
-    const id = crypto.randomUUID();
+    const id = nanoid();
     turn.current = id;
+    displayGate.begin();
     abort.current = new AbortController();
     turnVoice.current = voiceOutput && Boolean(settingsRef.current?.voice) && Boolean(bootstrap?.configured.tts);
     setBusy(true);
@@ -189,7 +225,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
-      if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings')) setCardRequest({ card: event.card, turnId: id });
+      if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot' || event.type === 'card.open') displayGate.receive(event);
       if (event.type === 'messages' && event.user && event.assistant) {
         assistantId = event.assistant.id;
         accepted = true;
@@ -206,12 +242,14 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       if (event.type === 'sources')
         setMessages((old) => old.map((m) => (m.id === assistantId ? { ...m, sources: event.sources } : m)));
       if (event.type === 'text.delta' && event.text) {
+        if (!turnVoice.current && event.text.trim()) displayGate.release();
         if (isolatedStream && !turnVoice.current) textStream.append(assistantId, event.text);
         else setMessages((old) =>
           old.map((m) => (m.id === assistantId ? { ...m, text: m.text + event.text } : m)),
         );
       }
       if (event.type === 'error') {
+        displayGate.release();
         failed = true;
         voice.current?.stop();
         setMessages((old) => old.map((m) => (m.turnId === id ? { ...m, visibleText: undefined } : m)));
@@ -229,6 +267,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
           completed = true;
           setState('idle');
         } else {
+          displayGate.release();
           voice.current?.stop();
           setMessages((old) => old.map((m) => (m.turnId === id ? { ...m, visibleText: undefined } : m)));
           setState(message.status === 'interrupted' ? 'interrupted' : 'error');
@@ -239,6 +278,8 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       if (validate && !await validate()) { if (turn.current === id) setState('idle'); return false; }
       await cancellation.current;
       if (turn.current !== id) return false;
+      const clientIp = await clientPublicIp();
+      if (turn.current !== id || signal.aborted) return false;
       const response = await fetch('/joe-api/chat', {
         ...jsonBody({
           sessionId,
@@ -246,6 +287,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
           text,
           model,
           attachmentIds: attachments.map((a) => a.id),
+          clientIp,
         }),
         signal: abort.current.signal,
       });
@@ -280,6 +322,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
         } catch (error) {
           if (turn.current === id && !speechSignal.aborted) {
             setVoicePending(false);
+            displayGate.release();
             setMessages(old => old.map(m => m.turnId === id ? { ...m, visibleText: undefined } : m));
             setError(error instanceof Error ? error.message : '语音准备失败');
           }
@@ -288,6 +331,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       return accepted;
     } catch (e) {
       if (turn.current === id) {
+        displayGate.release();
         voice.current?.stop();
         setError(e instanceof Error ? e.message : '连接失败');
         setState('error');
@@ -299,6 +343,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       }
       return accepted;
     } finally {
+      if (!completed && turn.current === id) displayGate.release();
       if (!accepted && mounted.current) setMessages(old => old.filter(m => m.id !== optimisticId));
       if (turn.current === id) {
         setBusy(false);
@@ -340,6 +385,14 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       setError(String(e));
     }
   }
+  async function removeWidget(card: WidgetCard) {
+    try {
+      const result = await api<{ instance: unknown }>('/widget-visibility', jsonBody({ sessionId, card, visible: false }));
+      setWidgetVisibility(current => applyWidgetSnapshot(current, result.instance));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '卡片关闭失败');
+    }
+  }
   async function newSession() {
     setCardRequest(null);
     stop();
@@ -348,8 +401,11 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     uploadAbort.current?.abort();
     setUploading(false);
     try {
-      const session = await api<{ id: string; created?: boolean; messages: Message[] }>('/session', jsonBody({}));
+      const session = await api<{ id: string; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', jsonBody({}));
       localStorage.setItem(sessionKey, session.id);
+      setWidgetCursor(session.widgetCursor ?? 0);
+      setWidgetVisibility((session.widgets ?? []).reduce<WidgetVisibility>(applyWidgetSnapshot, {}));
+      setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
       setSessionId(session.id);
       setMessages(session.messages);
       setGreetingToPlay(session.messages.find(m => m.kind === 'greeting')?.id || '');
@@ -374,6 +430,9 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     playing,
     voicePending,
     cardRequest,
+    widgetVisibility,
+    removeWidget,
+    widgetResources,
     error,
     attachments,
     uploading,
