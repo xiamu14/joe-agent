@@ -1,6 +1,8 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { currentWeather, weather } from './weather';
+import { weatherSchema } from './widget-resources';
+import { beginWidgetSchema, widgetSnapshotSchema } from './tool-contracts';
 
 export const getWeather = createTool({
   id: 'get-weather',
@@ -15,14 +17,22 @@ export const getWeather = createTool({
       .optional()
       .describe('城市名称，可附带国家，例如 Tokyo, Japan；查询当前位置时省略'),
   }),
+  outputSchema: weatherSchema.extend({ widget: widgetSnapshotSchema.optional() }),
+  requestContextSchema: z.object({
+    'weather.begin': beginWidgetSchema.optional(),
+    'canvas.enabled': z.boolean().optional(),
+    'client.ip': z.string().optional(),
+  }),
+  toModelOutput: ({ widget, ...weather }) => ({ type: 'json', value: weather }),
   execute: async ({ city }, context) => {
-    const begin = context?.requestContext?.get('weather.begin') as (() => ((data: unknown) => unknown)) | undefined;
+    const begin = context?.requestContext?.get('weather.begin');
     const commit = begin?.();
     if (!commit && context?.requestContext?.get('canvas.enabled')) throw new Error('当前客户端不支持天气卡片');
-    const result = await (city ? weather(city, context?.abortSignal) : currentWeather(context?.requestContext?.get('client.ip') as string | undefined, context?.abortSignal));
+    const result = await (city ? weather(city, context?.abortSignal) : currentWeather(context?.requestContext?.get('client.ip'), context?.abortSignal));
     if (!result.configured) throw new Error('请先配置 WEATHER_API_KEY');
+    const checked = weatherSchema.parse(result);
     context?.abortSignal?.throwIfAborted();
-    const widget = commit?.(result);
-    return { ...result, ...(widget ? { widget } : {}) };
+    const widget = commit?.(checked);
+    return { ...checked, ...(widget ? { widget } : {}) };
   },
 });

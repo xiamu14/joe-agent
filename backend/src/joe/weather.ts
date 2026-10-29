@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { isIP } from 'node:net';
+import { InMemoryServerCache } from '@mastra/core/cache';
+import { weatherSchema } from './widget-resources';
 
 const CACHE_MS = 15 * 60_000;
 const responseSchema = z.object({
@@ -37,14 +39,15 @@ export type Weather = {
   updatedAt?: number;
   source?: string;
 };
-const cache = new Map<string, { expires: number; data: Weather }>();
+const cache = new InMemoryServerCache({ ttlMs: CACHE_MS, maxSize: 30 });
 export async function weather(location: string, signal?: AbortSignal): Promise<Weather> {
   const query = z.string().trim().min(1).max(200).parse(location);
   signal?.throwIfAborted();
   const key = process.env.WEATHER_API_KEY?.trim();
   if (!key) return { configured: false };
-  const cached = cache.get(query);
-  if (cached && cached.expires > Date.now()) return cached.data;
+  const cached = await cache.get(query);
+  signal?.throwIfAborted();
+  if (cached !== undefined) return weatherSchema.parse(cached);
   const url = new URL('https://api.weatherapi.com/v1/forecast.json');
   url.search = new URLSearchParams({ key, q: query, days: '1', lang: 'zh' }).toString();
   try {
@@ -81,8 +84,8 @@ export async function weather(location: string, signal?: AbortSignal): Promise<W
       updatedAt: current.last_updated_epoch * 1000,
       source: 'WeatherAPI.com',
     };
-    if (cache.size >= 30) cache.clear();
-    cache.set(query, { data, expires: Date.now() + CACHE_MS });
+    signal?.throwIfAborted();
+    await cache.set(query, data);
     return data;
   } catch (error) {
     if (signal?.aborted) throw new Error('天气查询已取消');

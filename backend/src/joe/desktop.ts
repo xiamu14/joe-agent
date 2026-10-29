@@ -17,7 +17,9 @@ export const desktopActionSchema = z.object({
   height: z.number().min(480).max(1800).optional(),
 });
 type Action = z.infer<typeof desktopActionSchema>;
-const pending = new Map<string, { session: string; turn: string; finish: (result: unknown) => void }>();
+const desktopOutputSchema = z.object({ ok: z.boolean(), detail: z.string().max(500), state: desktopStateSchema.optional() });
+type DesktopOutput = z.infer<typeof desktopOutputSchema>;
+const pending = new Map<string, { session: string; turn: string; finish: (result: DesktopOutput) => void }>();
 export const desktopResultSchema = z.object({
   sessionId: idSchema, turnId: idSchema, id: idSchema,
   ok: z.boolean(), detail: z.string().max(500), state: desktopStateSchema,
@@ -35,8 +37,8 @@ export function desktopExecutor(session: string, turn: string, signal: AbortSign
     const command = desktopActionSchema.parse(input);
     signal.throwIfAborted();
     const id = nanoid();
-    return new Promise<unknown>((resolve) => {
-      const finish = (result: unknown) => {
+    return new Promise<DesktopOutput>((resolve) => {
+      const finish = (result: DesktopOutput) => {
         clearTimeout(timer); signal.removeEventListener('abort', abort); pending.delete(id); resolve(result);
       };
       const abort = () => finish({ ok: false, detail: '操作已取消' });
@@ -51,8 +53,14 @@ export const controlDesktop = createTool({
   id: 'control-desktop',
   description: '控制原生桌面卡片、视频和窗口。必须等待执行结果，失败不得声称成功。',
   inputSchema: desktopActionSchema,
+  outputSchema: desktopOutputSchema,
+  requestContextSchema: z.object({
+    'desktop.execute': z.custom<(input: Action) => Promise<DesktopOutput>>(
+      value => typeof value === 'function', '桌面执行能力无效',
+    ).optional(),
+  }),
   execute: async (input, context) => {
-    const execute = context?.requestContext?.get('desktop.execute') as ((input: Action) => Promise<unknown>) | undefined;
+    const execute = context?.requestContext?.get('desktop.execute');
     if (!execute) return { ok: false, detail: '当前不是桌面客户端' };
     return execute(input);
   },

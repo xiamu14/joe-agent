@@ -5,14 +5,14 @@
 | 文件 | 处理结论 |
 | --- | --- |
 | `backend/src/config/models.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
-| `backend/src/joe/agent.ts` | 已用 Agent/createTool；补工具契约及模型输出裁剪 |
+| `backend/src/joe/agent.ts` | 已用 Agent/createTool；知识库输出契约已补齐 |
 | `backend/src/joe/chat.ts` | 复用官方 UI 转换与线程生命周期；保留结构化正文增量投影 |
-| `backend/src/joe/clear-legacy-sessions.ts` | 停止耦合内部表；公开 API 与保留旧 ID 的迁移策略 |
+| `backend/src/joe/clear-legacy-sessions.ts` | UUID 迁移已完成，用户确认当前无 UUID 数据；无需再处理 |
 | `backend/src/joe/config.ts` | 模型白名单保留；复用注册 Agent 配置 |
 | `backend/src/joe/conversations.ts` | 公开 Memory API；收敛消息投影/补写与会话迁移 |
 | `backend/src/joe/data-directory.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
-| `backend/src/joe/data-mcp.ts` | 官方 MCPClient 替换连接/工具接入胶水 |
-| `backend/src/joe/desktop.ts` | client tool 或 suspend/resume 替代 pending 回执协议 |
+| `backend/src/joe/data-mcp.ts` | 已使用官方 MCPClient，发现并仅调用视频搜索，保留取消和结果校验 |
+| `backend/src/joe/desktop.ts` | 输出/上下文契约已完成；client tool/suspend 改造尚未实施 |
 | `backend/src/joe/greeting.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
 | `backend/src/joe/id.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
 | `backend/src/joe/input-language.ts` | 注册现有 Agent；DecisionModel 可用时评估 Classifier |
@@ -22,6 +22,7 @@
 | `backend/src/joe/speech-markdown.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
 | `backend/src/joe/speech-text.ts` | 注册翻译 Agent；保留语言选择与消息归属 |
 | `backend/src/joe/store.ts` | sessions/greeting 可向 Memory 收敛；其他业务表保留 |
+| `backend/src/joe/tool-contracts.ts` | 新增共享工具卡片契约；复用资源 schema |
 | `backend/src/joe/usage-sync.ts` | 真实账单对账保留，不用 trace 替代 |
 | `backend/src/joe/voice-account.ts` | 账单 API 保留；TTL 容器可复用，保留失效/合并语义 |
 | `backend/src/joe/voice-errors.ts` | 供应商安全错误映射保留 |
@@ -33,14 +34,14 @@
 | `backend/src/joe/voice-providers/index.ts` | 用 CompositeVoice 组合 input/output；保留供应商配置校验 |
 | `backend/src/joe/voice-providers/types.ts` | 供应商配置/类型/安全 HTTP 验证，保留必要差异 |
 | `backend/src/joe/voice.ts` | 基础调用接官方 Voice/CompositeVoice；校验/扩展保留 |
-| `backend/src/joe/weather-tool.ts` | 补 outputSchema/requestContextSchema/toModelOutput；框架事件输出 |
-| `backend/src/joe/weather.ts` | TTL 缓存可替换；供应商协议和数据校验保留 |
+| `backend/src/joe/weather-tool.ts` | 输出/上下文契约及模型裁剪已完成；事件协议暂保留 |
+| `backend/src/joe/weather.ts` | 已使用 InMemoryServerCache；供应商协议和数据校验保留 |
 | `backend/src/joe/widget-events.ts` | PubSub 通知替代定时查库；保留持久游标重放 |
 | `backend/src/joe/widget-resources.ts` | 与工具输出 schema 复用，业务资源约束保留 |
 | `backend/src/joe/widget-runtime.ts` | 业务存储实例，保留 |
 | `backend/src/joe/widget-store.ts` | 业务事务/幂等/revision 保留，不映射成 Memory |
-| `backend/src/joe/widget-tool.ts` | 补输出/上下文契约；标准 tool parts/custom events |
-| `backend/src/joe/youtube-tool.ts` | 补输出契约与 toModelOutput；保留卡片业务 |
+| `backend/src/joe/widget-tool.ts` | 输出/上下文契约及模型裁剪已完成；事件协议暂保留 |
+| `backend/src/joe/youtube-tool.ts` | 输出/上下文契约及 toModelOutput 已完成；保留卡片业务 |
 | `backend/src/mastra/index.ts` | 框架入口已使用；集中注册辅助 Agent、middleware、缓存和 PubSub |
 | `scripts/check-lines.mjs` | 开发/构建/生成脚本；不是 Agent 框架替代范围 |
 | `scripts/dev.mjs` | 开发/构建/生成脚本；不是 Agent 框架替代范围 |
@@ -101,7 +102,7 @@
 | `web/src/joe/layouts/free-canvas-layout.tsx` | 画布布局/交互/持久偏好业务；保留 |
 | `web/src/joe/layouts/use-canvas-modes.ts` | 画布布局/交互/持久偏好业务；保留 |
 | `web/src/joe/markdown-answer.tsx` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
-| `web/src/joe/session-storage.ts` | 会话 ID 缓存；迁移需保留旧 ID 兼容性 |
+| `web/src/joe/session-storage.ts` | 当前会话 ID 缓存，保留；无需补做 UUID 兼容 |
 | `web/src/joe/speech-stream.ts` | 浏览器设备/供应商实时协议/字幕播放；保留，配合后端 Voice 契约 |
 | `web/src/joe/static-workspace.tsx` | 画布布局/交互/持久偏好业务；保留 |
 | `web/src/joe/stream.ts` | 标准 parts 处理优先官方 SDK；语音切分保留 |
@@ -162,7 +163,7 @@
 
 测试、依赖与配置：
 
-- 已扫描 backend/tests、web/tests、scripts/*.test.mjs 的测试入口；本次未执行。
+- 审查阶段扫描了 backend/tests、web/tests、scripts/*.test.mjs 的测试入口；本轮工具/MCP/缓存改造后，84 项后端测试与前后端类型检查通过，临时工作区生产构建成功。
 - backend/package.json、web/package.json、根 package.json、web/vite.config.ts：检查框架依赖、运行方式和代理关系。
 - 应用之外的 .mastra、node_modules、构建资源不列入改造；只读取已安装 Mastra 的公开声明和随包文档核实能力。
 - 分析过程中检测到画布偏好相关并行工作区改动；没有编辑这些文件。

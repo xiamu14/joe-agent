@@ -6,16 +6,29 @@
 
 依据：项目安装的 @mastra/core 1.79.0 类型声明及随包文档优先，官方在线文档补充。@mastra/mcp、@mastra/ai-sdk、@mastra/voice-elevenlabs 未在 backend/package.json 声明；@ai-sdk/react 未在 web/package.json 声明。新包必须先核对版本兼容性。
 
+## 本轮实施状态（2026-10-29）
+
+已完成工具契约、天气缓存与 MCP 客户端优化：
+
+- 五个业务工具均声明 outputSchema；四个依赖客户端能力的工具声明 requestContextSchema。
+- 天气、视频和卡片显示通过 toModelOutput 去除 UI 内部字段；视频保留标题、频道和来源 URL 供模型概括，UI 仍得到完整资源。
+- 天气改用 InMemoryServerCache，15 分钟 TTL、最多 30 条；容量达到上限时按框架淘汰，不再全部清空。
+- 安装 @mastra/mcp 2.6.0（peerDependencies 支持当前 core 1.79.0），移除后端直接声明的旧 MCP SDK。通过官方工具发现，仅执行 youtube_search，兼容 FastMCP 旧握手、文本/结构化结果、取消与鉴权。
+- Python 服务、天气供应商请求、卡片事件协议、运行取消与桌面回执机制保持原职责；UUID 迁移不在本轮范围内。
+
+下文为改造前的审查依据；以上状态优先于其中“尚未使用”的历史描述。本轮并未实施官方 UI 流转换或卡片事件协议迁移。
+
+验证结果：84 项后端测试通过（含新增工具契约、缓存到期/容量、MCP 发现/鉴权/结果格式/取消测试），前后端 typecheck 通过，217 个源文件均不超过 500 行，diff 空白检查通过。保留 Bun 工作区及锁文件的临时目录生产构建成功，未中断运行中的开发服务。未调用真实 WeatherAPI 或 Agent Reach CLI。一次高并发回归触发 greeting 测试已有的数据库关闭后异步活动错误，限制测试并发为 2 后全量通过；本轮未改其实现。
+
 ## 结论与优先级
 
 核心推理、工具循环、结构化生成和 Memory 已由 Mastra 承担。可减少的重复实现集中在工具边界、缓存、消息传输、运行生命周期和供应商标准接口。
 
 | 优先级 | 收敛项 | 结论 |
 | --- | --- | --- |
-| 高 | 工具 outputSchema / requestContextSchema / toModelOutput | 已安装 core 提供；所有业务工具都应按实际契约使用 |
-| 高 | 直接操作 Mastra 内部数据库表 | 改成公开 Memory API；先取消自动删除旧会话的迁移策略 |
-| 高 | 数据 MCP 客户端 | 使用兼容的 @mastra/mcp；保留数据清洗和卡片业务 |
-| 中 | 天气 TTL Map | InMemoryServerCache 可替代；保留供应商请求、定位、错误映射 |
+| 已完成 | 工具 outputSchema / requestContextSchema / toModelOutput | 五个工具补齐输出契约；按需校验上下文并裁剪模型结果 |
+| 已完成 | 数据 MCP 客户端 | 已使用 @mastra/mcp 2.6.0；保留数据清洗和卡片业务 |
+| 已完成 | 天气 TTL Map | 已替换为 InMemoryServerCache；保留供应商请求、定位、错误映射 |
 | 中 | 每轮消息转换与 UI 状态 | @mastra/ai-sdk + AI SDK React 可覆盖标准部分；结构化正文增量需保留适配 |
 | 中 | 手写 active/inFlight 和取消协调 | 对照原生线程订阅、发送和取消 API，先验证语义再替换 |
 | 中 | 桌面 pending 回执 Map | 改用 client tools 或 suspend/resume；客户端仍负责真正执行 |
@@ -83,7 +96,7 @@ conversations.ts 的附件组装、UI 元数据和 greeting 恢复有业务价�
 
 store.ts 的 sessions 与 Mastra thread 形成双登记；可逐步用 thread 作为会话事实来源，但附件、画布关系、幂等与启动初始化都需同步迁移。settings、usage、attachments、widget 表是业务数据，不能一概塞入 Working Memory。
 
-clear-legacy-sessions.ts 直接 ATTACH mastra.db 并删除 mastra_threads/messages/thread_state，绕过公开 API，对框架内部表结构存在强耦合。Memory 已有 deleteThread。更重要的是，该代码启动时丢弃 UUID 会话，与当前 AGENTS.md 的“迁移保留既有 ID”要求冲突。应先保留历史、兼容读取，再单独处理明确授权的清理；不要继续运行破坏性自动迁移。
+已完成事项（用户确认，2026-10-29）：UUID 迁移已处理完毕，当前已无 UUID 数据。clear-legacy-sessions.ts 属于已完成迁移的历史代码，不再列为要求冲突、当前数据风险或待改造项；无需补做 UUID 兼容、恢复或清理。
 
 greeting 仍写入 Joe messages 表再导入 Memory，因此“旧 messages 表完全不再写入”的理解不准确；普通新对话正文走 Memory，但 greeting 仍使用旧表。收敛时应一并迁移，不能只删除 saveMessage。
 
@@ -129,11 +142,11 @@ React/RareUI 控件、Motion 动画、Bento/自由布局、拖拽、缩放、倾
 2. MCP：官方客户端、最小工具白名单；保留 Python 部署边界。测试 discovery、鉴权传递、错误与取消、卡片 revision 冲突。
 3. 消息传输：官方 UI 转换 + useChat，保留 partial structured text 投影；验证无 JSON 泄露、无双消息、工具结果/来源/情绪和停止行为。
 4. 生命周期与桌面：原生 thread API、client tool 或 suspend/resume；验证旧轮取消不会影响新轮、客户端回执不能跨会话、断线行为一致。
-5. 存储：公开 API 替代内部 SQL、原生消息与 UI 元数据分离、greeting/session 收敛；备份并验证迁移重试、既有 IDs、历史恢复。
+5. 存储：原生消息与 UI 元数据分离、greeting/session 收敛；备份并验证迁移重试、当前消息 IDs、历史恢复。已完成的 UUID 迁移不在此次范围内。
 6. 语音：官方 ElevenLabs 基础接口 + CompositeVoice；差异留薄扩展。分类器单独验证，不与语音迁移捆绑。
 7. PubSub 与 middleware：统一通知和路由策略，保留持久 cursor 与现有本机限制。
 
-每一步只运行受影响的现有测试和必要契约测试，完成后执行相关 typecheck；真实供应商兼容性需另做集成验证。当前仅分析，未改应用代码、未执行测试、未访问真实数据库内容。
+后续各步运行受影响的现有测试和必要契约测试，完成后执行相关 typecheck；真实供应商兼容性需另做集成验证。本轮实施与验证结果见文首，未访问真实数据库内容。
 
 ## 参考
 

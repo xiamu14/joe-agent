@@ -386,10 +386,18 @@ test('video search delivers resource and visible card in tool result', async () 
       if (request.id === undefined) return new Response(null, { status: 202 });
       const result = request.method === 'initialize'
         ? { protocolVersion: '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'fixture', version: '1' } }
+        : request.method === 'tools/list'
+        ? { tools: [{ name: 'youtube_search', inputSchema: { type: 'object', properties: { query: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] } }] }
         : { content: [{ type: 'text', text: JSON.stringify({ ok: true, items: [{ title: 'Jazz', author: 'Music', url: null, published_at: null, raw: { id: 'BagZ55ac4xs', view_count: 42 } }] }) }] };
       return Response.json({ jsonrpc: '2.0', id: request.id, result });
     }
     calls++;
+    if (calls === 2) {
+      const request = JSON.parse(String(init?.body));
+      const output = request.messages.find((message: { role: string }) => message.role === 'tool').content;
+      assert.match(output, /Jazz/);
+      assert.doesNotMatch(output, /thumbnail|instanceId|resourceId|revision/);
+    }
     const frame = (delta: unknown, reason: string | null) => `data: ${JSON.stringify({ id: 'video-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
     const content = calls === 1 ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: 'video-call', type: 'function', function: { name: 'searchYouTube', arguments: '{"query":"jazz"}' } }] }, null) + frame({}, 'tool_calls') : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"找到了。"}') + frame({}, 'stop');
     return new Response(content + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });

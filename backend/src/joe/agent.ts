@@ -22,6 +22,7 @@ const searchDocs = createTool({
   id: 'search-docs',
   description: '搜索用户的 Zendocs 本地知识库。有关本地文档的问题必须先检索；未找到时说明没有依据。',
   inputSchema: z.object({ query: z.string().min(1).max(1000) }),
+  outputSchema: z.object({ sources: z.array(sourceSchema).max(6) }),
   execute: async ({ query }, context) => {
     const response = await fetch(process.env.ZENDOCS_SEARCH_URL!, {
       method: 'POST',

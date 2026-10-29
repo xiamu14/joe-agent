@@ -234,7 +234,9 @@ python services/data-mcp/server.py
 
 backend 设置 `DATA_MCP_URL=http://127.0.0.1:4120/mcp` 后重启。数据服务单独启动、升级和维护；`AGENT_REACH_BIN` 可指定可执行文件路径。默认仅监听本机，远程部署需在网关配置认证和 TLS，backend 可用 `DATA_MCP_TOKEN` 发送 Bearer 凭据。
 
-MCP 提供 `youtube_search`、`youtube_get_video`、`youtube_get_subtitles`。Mastra 的视频搜索通过 MCP 查询并更新卡片，仅返回数量与简短提示给模型，避免逐条朗读。标题、频道、播放量取自 Agent Reach；发布日期缺失时省略。视频 ID 沿用 YouTube 外部协议。
+后端使用 `@mastra/mcp` 的 `MCPClient` 发现工具，仅调用 `youtube_search`；每次请求独立连接并释放，支持取消、Bearer 凭据和 FastMCP 握手。
+
+MCP 提供 `youtube_search`、`youtube_get_video`、`youtube_get_subtitles`。Mastra 的视频搜索通过 MCP 查询并更新卡片，通过 Mastra `toModelOutput` 向模型返回数量、简短提示及标题/频道/来源摘要，卡片完整资源仅用于 UI，避免逐条朗读。标题、频道、播放量取自 Agent Reach；发布日期缺失时省略。视频 ID 沿用 YouTube 外部协议。
 
 卡片以滚动列表展示搜索结果与置顶的最近播放，点击后展开播放器，可返回列表。最近播放仅在播放器报告实际播放后记录，按视频去重、最多 20 条，保存在当前浏览器的 YouTube widget 专属 localStorage 中；不上传数据服务，不跨设备同步。存储不可用时仍可播放。
 
@@ -243,3 +245,7 @@ MCP 提供 `youtube_search`、`youtube_get_video`、`youtube_get_subtitles`。Ma
 输入区工具菜单中的「自由 / Bento」显示当前布局，点击直接切换；两个空间分别记住布局选择。`FreeCanvasLayout` 和 `BentoCanvasLayout` 分别负责自由定位与固定尺寸排布，卡片内容层始终保持挂载，通过 Motion LayoutGroup / layoutId 平滑移动，切换不会重建播放器或设置表单。自由坐标独立保存，Bento 不会覆盖它们。
 
 Bento 按可见卡片原始宽高排列，间隔 16px，卡片增删后自动补位；画布不足时滚动且隐藏滚动条。进入退出使用位移和透明度，自由布局使用缩放和透明度；展开、收起和视频播放尺寸沿用卡片现有规则。
+
+### 工具契约与天气缓存
+
+五个业务工具均使用 Mastra `outputSchema`，依赖客户端能力的工具还使用 `requestContextSchema`。天气、视频和卡片显示工具通过 `toModelOutput` 隔离模型所需数据与 UI 内部状态。天气缓存使用 `InMemoryServerCache`，有效期 15 分钟、最多 30 条；达到容量上限时由框架淘汰过期时间最早的条目。
