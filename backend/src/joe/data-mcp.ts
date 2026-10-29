@@ -24,8 +24,10 @@ export async function searchVideoData(query: string, signal?: AbortSignal) {
       const id = typeof item.raw?.id === 'string' ? item.raw.id : '';
       if (!/^[\w-]{11}$/.test(id) || !item.title) return [];
       const views = item.raw?.view_count;
+      const duration = item.raw?.duration;
       return [{ id, title: item.title.slice(0, 300), channel: item.author ?? '',
         thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        ...(typeof duration === 'number' && Number.isFinite(duration) && duration >= 0 ? { duration } : {}),
         ...(item.published_at ? { publishedAt: item.published_at } : {}),
         ...(typeof views === 'number' && Number.isFinite(views) && views >= 0 ? { views } : {}),
       }];

@@ -23,10 +23,10 @@ export function YouTubeCard({ results }: { results?: VideoResults }) {
   function choose(item: VideoItem) { setSelectedItem(item); setSelected(item.id); scene.open('video'); }
 
   return (
-    <TiltCard id="video" expandedScroll={false} expandedWidth={selected ? 'min(914px, calc(100cqw - 24px))' : 'min(630px, calc(100cqw - 24px))'}
+    <TiltCard id="video" animateExpandedSize expandedScroll={false} expandedWidth={selected ? 'min(914px, calc(100cqw - 24px))' : 'min(630px, calc(100cqw - 24px))'}
       expandedHeight={selected ? 'min(1280px, calc(100cqh - 24px))' : 'min(900px, calc(100cqh - 24px))'}
-      surfaceClassName="flex flex-col overflow-hidden rounded-[24px] bg-white text-black" label="视频卡片" onExpand={() => { if (selected) video.play(); }} onClose={video.pause}>
-      <motion.div className="flex h-14 shrink-0 items-center justify-between gap-3 px-5 text-xs">
+      surfaceClassName={`flex flex-col overflow-hidden rounded-[24px] ${selected ? 'bg-black' : 'bg-white'} text-black`} label="视频卡片" onExpand={() => { if (selected) video.play(); }} onClose={video.pause}>
+      <motion.div className="flex h-14 shrink-0 items-center bg-white justify-between gap-3 px-5 text-xs">
         <motion.span className="flex items-center gap-2 text-black/60"><motion.img src="/logos/youtube.svg" alt="" draggable={false} className="h-4 w-auto shrink-0" />YouTube</motion.span>
         {selected && <Button onClick={event => { event.stopPropagation(); video.pause(); setSelected(''); }} className="rounded-full px-3 py-1 text-black/70 hover:bg-black/5">返回列表</Button>}
       </motion.div>
@@ -35,7 +35,7 @@ export function YouTubeCard({ results }: { results?: VideoResults }) {
         {results && <><motion.p className="px-2 text-xs text-black/50">搜索结果</motion.p><VideoList items={results.videos} onSelect={choose} /></>}
         {!recent.length && !results && <motion.p className="px-2 py-5 text-xs text-black/50">让 Joe 帮你找视频</motion.p>}
         {results?.videos.length === 0 && <motion.p className="px-2 py-4 text-xs text-black/50">没有找到视频</motion.p>}
-      </motion.div> : <motion.div className={`relative w-full ${expanded ? 'min-h-0 flex-1' : 'min-h-[200px] aspect-video'} overflow-hidden rounded-b-[24px] bg-black`}>
+      </motion.div> : <motion.div className={`relative w-full ${expanded ? 'min-h-0 flex-1' : 'min-h-[200px] aspect-video'} overflow-hidden bg-black`}>
         <motion.div ref={video.host} className={`absolute inset-0 [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:size-full [&_iframe]:border-0 ${expanded ? '' : 'pointer-events-none opacity-0'}`} aria-hidden={!expanded} inert={!expanded} />
         {!expanded && <motion.div className="absolute inset-0 grid cursor-pointer place-items-center bg-black/30" aria-hidden="true">
           {!thumbnailFailed && <motion.img src={`https://i.ytimg.com/vi/${selected || videoId}/hqdefault.jpg`} onError={() => setThumbnailFailed(true)} alt="" draggable={false} className="absolute inset-0 size-full object-contain opacity-70" />}

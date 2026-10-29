@@ -14,7 +14,7 @@ import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
 const MotionButton = motion.create(Button);
 const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
-export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true }: {
+export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
   id: CanvasCardId;
   children: ReactNode;
   className?: string;
@@ -25,6 +25,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   expandedWidth?: string;
   expandedHeight?: string;
   expandedScroll?: boolean;
+  animateExpandedSize?: boolean;
 }) {
   const scene = useCanvasScene();
   const present = useIsPresent();
@@ -66,16 +67,16 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   return (
     <motion.article ref={card} tabIndex={-1} inert={blocked || !present}
       initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
-      animate={{ opacity: 1, scale: 1 }}
+      animate={{ opacity: 1, scale: 1, ...(animateExpandedSize ? { width: layoutExpanded ? expandedWidth : cardWidths[id], height: layoutExpanded ? expandedHeight : 'auto' } : {}) }}
       exit={{ opacity: 0, scale: reduced ? 1 : 0.94 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }} data-card={id}
+      transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1], width: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] }, height: { duration: layoutExpanded ? 0.45 : 0, ease: [0.22, 1, 0.36, 1] } }} data-card={id}
       className={`absolute ${className} ${selected ? 'cursor-auto' : scene.dragging === id ? 'cursor-grabbing select-none touch-none' : 'cursor-grab select-none touch-none'} outline-none [perspective:1000px]`}
       aria-label={label} data-expanded={expanded || layoutExpanded} data-flipping={flipping} data-dragging={scene.dragging === id || undefined}
       style={{
         left: layoutExpanded ? '50%' : `calc(50% + ${position.x}px)`,
         top: layoutExpanded ? '50%' : `calc(50% + ${position.y}px)`,
-        width: layoutExpanded ? expandedWidth : cardWidths[id],
-        height: layoutExpanded ? expandedHeight : undefined,
+        width: animateExpandedSize ? undefined : layoutExpanded ? expandedWidth : cardWidths[id],
+        height: animateExpandedSize ? undefined : layoutExpanded ? expandedHeight : undefined,
         maxHeight: layoutExpanded ? '100cqh' : undefined,
         translate: '-50% -50%',
         x: panX, y: panY,

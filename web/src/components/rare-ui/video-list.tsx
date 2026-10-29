@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Button } from '@base-ui/react/button';
 import { motion, useReducedMotion } from 'motion/react';
 
-export type VideoItem = { id: string; title: string; channel: string; thumbnail: string; publishedAt?: string; views?: number };
+export type VideoItem = { id: string; title: string; channel: string; thumbnail: string; publishedAt?: string; views?: number; duration?: number };
 const MotionButton = motion.create(Button);
 function VideoTitle({ title }: { title: string }) {
   const host = useRef<HTMLSpanElement>(null);
@@ -18,8 +18,22 @@ export function VideoList({ items, onSelect }: { items: VideoItem[]; onSelect(it
   return <motion.div className="space-y-1">{items.map(item => <MotionButton key={item.id} type="button" onClick={event => { event.stopPropagation(); onSelect(item); }} whileTap={{ scale: 0.98 }} className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-black/60">
     <motion.img src={item.thumbnail} alt="" loading="lazy" className="aspect-video w-28 shrink-0 rounded-lg object-cover" />
     <motion.span className="min-w-0 flex-1"><VideoTitle title={item.title} />
-      {item.channel && <motion.span className="mt-1 block truncate text-xs text-black/65">{item.channel}</motion.span>}
-      <motion.span className="mt-1 flex gap-2 text-[10px] text-black/50">{item.publishedAt && <span>{item.publishedAt}</span>}{item.views !== undefined && <span>{new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 }).format(item.views)} 次观看</span>}</motion.span>
+      {(item.channel || item.views !== undefined) && <motion.span className="mt-1 flex items-center justify-between gap-3 text-xs text-black/65">
+        <motion.span className="min-w-0 truncate">{item.channel}</motion.span>
+        {item.views !== undefined && <motion.span className="shrink-0 text-[10px] text-black/50">{new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 }).format(item.views)} 次观看</motion.span>}
+      </motion.span>}
+      {(item.duration !== undefined || item.publishedAt) && <motion.span className="mt-1 flex justify-between gap-2 text-[10px] text-black/50">
+        {item.duration !== undefined && <span>{formatDuration(item.duration)}</span>}
+        {item.publishedAt && <span>{item.publishedAt}</span>}
+      </motion.span>}
     </motion.span>
   </MotionButton>)}</motion.div>;
+}
+
+function formatDuration(seconds: number) {
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor(total / 60) % 60;
+  const remainder = String(total % 60).padStart(2, '0');
+  return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${remainder}` : `${minutes}:${remainder}`;
 }
