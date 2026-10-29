@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { WeatherCard } from './weather/weather-card';
 import { YouTubeCard } from './video/youtube-card';
@@ -13,7 +13,7 @@ import type { useJoe } from './use-joe';
 
 export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent }: {
   layout: CanvasLayout; initialPan: CanvasSnapshot['pan']; onSave: (snapshot: CanvasSnapshot) => void;
-  joe: AccountCardProps & Pick<ReturnType<typeof useJoe>, 'widgetVisibility' | 'widgetResources' | 'removeWidget'>; emptyContent?: ReactNode;
+  joe: AccountCardProps & Pick<ReturnType<typeof useJoe>, 'widgetVisibility' | 'widgetResources' | 'removeWidget' | 'cardRequest'>; emptyContent?: ReactNode;
 }) {
   const scene = useCanvasSceneState(layout, initialPan, onSave, joe.removeWidget);
   const pan = useCanvasPan(scene);
@@ -24,6 +24,13 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent }:
   const weatherResource = weatherId ? joe.widgetResources[weatherId] : undefined;
   const videoId = joe.widgetVisibility.video?.bindings.data?.resourceId;
   const videoResource = videoId ? joe.widgetResources[videoId] : undefined;
+  const handledRequest = useRef<typeof joe.cardRequest>(null);
+  useEffect(() => {
+    const request = joe.cardRequest;
+    if (!request || handledRequest.current === request || !visible(request.card)) return;
+    handledRequest.current = request;
+    scene.open(request.card, true);
+  }, [joe.cardRequest, joe.widgetVisibility, scene.open]);
   const selected = scene.selection?.id;
   useEffect(() => {
     if (selected && ['costs', 'settings', 'weather', 'video'].includes(selected) && !visible(selected as WidgetCard)) scene.dismiss(selected);

@@ -93,7 +93,7 @@ export type AgentEvent = {
   user?: Message;
   assistant?: Message;
   sources?: { title: string; url: string }[];
-  card?: 'costs' | 'settings';
+  card?: 'costs' | 'settings' | 'weather' | 'video';
   instance?: unknown;
   resource?: unknown;
 };

@@ -186,6 +186,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
                 if (result.success) {
                   emit('resource.snapshot', { resource: result.data.widget.resource });
                   emit('widget.snapshot', { instance: result.data.widget.instance });
+                  if (result.data.widget.instance.visible) emit('card.open', { card: chunk.payload.toolName === 'searchYouTube' ? 'video' : 'weather' });
                 }
               }
               const found = z.object({ sources: z.array(sourceSchema) }).safeParse(chunk.payload.result);

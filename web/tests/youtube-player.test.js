@@ -49,7 +49,7 @@ test('a failed API request can retry instead of caching a rejected promise', asy
   const f = fixture();
   const first = f.context.loadYouTubeApi();
   f.scripts[0].onerror();
-  await assert.rejects(first, /无法连接/);
+  await assert.rejects(first, /脚本加载失败/);
   const second = f.context.loadYouTubeApi();
   assert.equal(f.scripts.length, 2);
   f.resolve();
@@ -72,7 +72,7 @@ test('player embeds the requested video with explicit origin and reports actual 
   f.options.events.onAutoplayBlocked();
   assert.equal(f.blocked, 1);
   f.options.events.onError({ target: f.player, data: 150 });
-  assert.match(f.error, /暂无法播放/);
+  assert.match(f.error, /禁止嵌入/);
   dispose();
   assert.equal(f.calls.destroyed, 1);
   assert.equal(f.calls.cleared, 1);
@@ -95,4 +95,15 @@ test('unmount before API readiness never creates a late player', async () => {
   dispose(); f.resolve(); await flush();
   assert.equal(f.calls.created, 0);
   assert.equal(f.timers.size, 0);
+});
+
+test('native embed survives control script failure and is only removed on disposal', async () => {
+  const f = fixture(), dispose = f.mount();
+  f.scripts[0].onerror();
+  await flush(); await flush();
+  assert.match(f.error, /控制脚本加载失败/);
+  assert.equal(f.calls.cleared, 0);
+  assert.equal(f.calls.destroyed, 0);
+  dispose();
+  assert.equal(f.calls.cleared, 1);
 });

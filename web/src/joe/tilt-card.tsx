@@ -14,7 +14,7 @@ import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
 const MotionButton = motion.create(Button);
 const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
-export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto' }: {
+export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true }: {
   id: CanvasCardId;
   children: ReactNode;
   className?: string;
@@ -24,6 +24,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   onClose?: () => void;
   expandedWidth?: string;
   expandedHeight?: string;
+  expandedScroll?: boolean;
 }) {
   const scene = useCanvasScene();
   const present = useIsPresent();
@@ -88,7 +89,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
       onClick={event => { if (!selected && !blocked && !(event.target as Element).closest(cardControls)) open(); }}
     >
       <motion.div animate={controls} className="h-full [backface-visibility:hidden] [transform-style:preserve-3d]">
-        <motion.div className={`relative h-full ${layoutExpanded ? 'overflow-y-auto [&>div:nth-of-type(2)]:pr-20' : ''} ${surfaceClassName}`}
+        <motion.div className={`relative h-full ${layoutExpanded ? `${expandedScroll ? 'overflow-y-auto' : 'overflow-hidden'} [&>div:nth-of-type(2)]:pr-20` : ''} ${surfaceClassName}`}
           style={{ maxHeight: layoutExpanded ? '100cqh' : undefined, rotateX: reduced || selected || blocked || scene.dragging ? 0 : rotateX, rotateY: reduced || selected || blocked || scene.dragging ? 0 : rotateY, rotateZ: layoutExpanded ? 0 : position.rotation }}
           animate={selected
             ? { y: 0, scale: 1, boxShadow: '0 32px 96px rgba(0,0,0,0.4)' }

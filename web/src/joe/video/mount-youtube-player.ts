@@ -15,9 +15,14 @@ type Callbacks = {
 export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks, selectedId = videoId) {
   let cancelled = false;
   let instance: YouTubePlayer | undefined;
-  const target = document.createElement('div');
+  // Embed immediately: native playback controls remain usable if the JS API fails.
+  const target = document.createElement('iframe');
+  target.src = `https://www.youtube.com/embed/${selectedId}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+  target.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  target.title = 'YouTube 视频播放器';
+  target.referrerPolicy = 'strict-origin-when-cross-origin';
   container.append(target);
-  const timer = setTimeout(() => callbacks.onError('播放器连接超时'), 20000);
+  const timer = setTimeout(() => callbacks.onError('播放器控制连接超时，可使用视频内控件'), 20000);
   void loadYouTubeApi().then(api => {
     if (cancelled) return;
     instance = new api.Player(target, {
@@ -44,7 +49,13 @@ export function mountYouTubePlayer(container: HTMLElement, callbacks: Callbacks,
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     iframe.title = 'YouTube 视频播放器';
     iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-  }).catch(() => { if (!cancelled) { clearTimeout(timer); callbacks.onError('无法连接 YouTube'); } });
+  }).catch(error => {
+    if (!cancelled) {
+      clearTimeout(timer);
+      callbacks.onError(error instanceof Error ? error.message : String(error));
+      console.error('[YouTube player]', { videoId: selectedId, error });
+    }
+  });
   return () => {
     cancelled = true;
     clearTimeout(timer);

@@ -221,3 +221,19 @@ ElevenLabs 使用 `/v1/user/subscription`，展示本账期用量/配额、重�
 ## 视觉组件署名
 
 空白画布使用 [OrbKit SHDR-01](https://orbkit.zzzzshawn.cloud/)，shader 作者为 [XorDev](https://x.com/XorDev)，由 zzzzshawn 移植。SHDR-01 仅限非商业使用并需保留署名；运行时为 MIT。详见 [第三方许可](THIRD_PARTY_NOTICES.md)。
+
+### 独立视频数据服务
+
+`services/data-mcp` 是独立部署的 MCP 适配层，Agent Reach 不嵌入 backend。
+在独立 Python 3.10+ 环境中，按 Agent Reach 官方 GitHub 安装说明安装程序（不要安装 PyPI 同名包），再运行：
+
+```sh
+python -m pip install -r services/data-mcp/requirements.txt
+python services/data-mcp/server.py
+```
+
+backend 设置 `DATA_MCP_URL=http://127.0.0.1:4120/mcp` 后重启。数据服务单独启动、升级和维护；`AGENT_REACH_BIN` 可指定可执行文件路径。默认仅监听本机，远程部署需在网关配置认证和 TLS，backend 可用 `DATA_MCP_TOKEN` 发送 Bearer 凭据。
+
+MCP 提供 `youtube_search`、`youtube_get_video`、`youtube_get_subtitles`。Mastra 的视频搜索通过 MCP 查询并更新卡片，仅返回数量与简短提示给模型，避免逐条朗读。标题、频道、播放量取自 Agent Reach；发布日期缺失时省略。视频 ID 沿用 YouTube 外部协议。
+
+卡片以滚动列表展示搜索结果与置顶的最近播放，点击后展开播放器，可返回列表。最近播放仅在播放器报告实际播放后记录，按视频去重、最多 20 条，保存在当前浏览器的 YouTube widget 专属 localStorage 中；不上传数据服务，不跨设备同步。存储不可用时仍可播放。

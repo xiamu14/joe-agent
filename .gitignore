@@ -4,3 +4,7 @@ dist/
 .env
 
 .tanstack/
+
+# Independent Python service runtime
+services/data-mcp/.venv/
+__pycache__/

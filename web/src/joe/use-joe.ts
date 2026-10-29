@@ -57,7 +57,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   const displayGate = useRef(createWidgetDisplayGate(event => {
     if (event.type === 'widget.snapshot') setWidgetVisibility(current => applyWidgetSnapshot(current, event.instance));
     if (event.type === 'resource.snapshot') setWidgetResources(current => applyResourceSnapshot(current, event.resource));
-    if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings') && event.turnId) setCardRequest({ card: event.card, turnId: event.turnId });
+    if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings' || event.card === 'weather' || event.card === 'video') && event.turnId) setCardRequest({ card: event.card, turnId: event.turnId });
   })).current;
   const uploadAbort = useRef<AbortController | null>(null),
     generation = useRef(0);

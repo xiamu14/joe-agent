@@ -23,12 +23,12 @@ export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnap
   const moveCard = useCallback((id: CanvasCardId, position: { x: number; y: number }) => {
     onSave({ version: 1, cards: { ...layout, [id]: { ...layout[id], ...position } }, pan: { x: panX.get(), y: panY.get() } });
   }, [layout, onSave, panX, panY]);
-  const open = useCallback((id: CanvasCardId) => {
-    if (dragging) return;
+  const open = useCallback((id: CanvasCardId, requested = false) => {
+    if (dragging && !requested) return;
     panX.stop(); panY.stop();
     setHovered(null);
     setForeground(id);
-    setSelection(current => current ?? { id, expanded: true });
+    setSelection(current => requested ? { id, expanded: true } : current ?? { id, expanded: true });
   }, [panX, panY, dragging]);
   const dismiss = useCallback((id: CanvasCardId) => setSelection(current => current?.id === id ? null : current), []);
   const close = useCallback(() => setSelection(current => current ? { ...current, expanded: false } : current), []);

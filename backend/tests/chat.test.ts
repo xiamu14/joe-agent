@@ -377,11 +377,18 @@ test('widget tool result opens a card before the final answer', async () => {
 });
 
 test('video search delivers resource and visible card in tool result', async () => {
-  const original = globalThis.fetch, key = process.env.YOUTUBE_API_KEY;
-  process.env.YOUTUBE_API_KEY = 'test-key';
+  const original = globalThis.fetch, key = process.env.DATA_MCP_URL;
+  process.env.DATA_MCP_URL = 'http://127.0.0.1:4120/mcp';
   let calls = 0;
-  globalThis.fetch = async (url) => {
-    if (String(url).startsWith('https://www.googleapis.com/')) return Response.json({ items: [{ id: { videoId: 'BagZ55ac4xs' }, snippet: { title: 'Jazz', channelTitle: 'Music' } }] });
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes('127.0.0.1:4120')) {
+      const request = JSON.parse(String(init?.body ?? '{}'));
+      if (request.id === undefined) return new Response(null, { status: 202 });
+      const result = request.method === 'initialize'
+        ? { protocolVersion: '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'fixture', version: '1' } }
+        : { content: [{ type: 'text', text: JSON.stringify({ ok: true, items: [{ title: 'Jazz', author: 'Music', url: null, published_at: null, raw: { id: 'BagZ55ac4xs', view_count: 42 } }] }) }] };
+      return Response.json({ jsonrpc: '2.0', id: request.id, result });
+    }
     calls++;
     const frame = (delta: unknown, reason: string | null) => `data: ${JSON.stringify({ id: 'video-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
     const content = calls === 1 ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: 'video-call', type: 'function', function: { name: 'searchYouTube', arguments: '{"query":"jazz"}' } }] }, null) + frame({}, 'tool_calls') : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"找到了。"}') + frame({}, 'stop');
@@ -392,8 +399,10 @@ test('video search delivers resource and visible card in tool result', async () 
     await readEvents(await chat({ sessionId: store.session(), turnId: nanoid(), text: '搜索爵士视频', model: 'openai/test' }, new AbortController().signal), event => events.push(event));
     assert.equal(events.find(event => event.type === 'widget.snapshot')?.instance.widgetType, 'youtube.video');
     assert.equal(events.find(event => event.type === 'resource.snapshot')?.resource.data.videos[0].title, 'Jazz');
+    assert.equal(events.find(event => event.type === 'card.open')?.card, 'video');
+    assert.ok(events.findIndex(event => event.type === 'card.open') > events.findIndex(event => event.type === 'widget.snapshot'));
     assert.equal(events.at(-1).message.status, 'complete');
-  } finally { globalThis.fetch = original; if (key === undefined) delete process.env.YOUTUBE_API_KEY; else process.env.YOUTUBE_API_KEY = key; }
+  } finally { globalThis.fetch = original; if (key === undefined) delete process.env.DATA_MCP_URL; else process.env.DATA_MCP_URL = key; }
 });
 
 test.after(async () => {

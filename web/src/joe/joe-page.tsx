@@ -25,7 +25,8 @@ export function JoePage() {
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [overview, setOverview] = useState(false);
   useEffect(() => {
-    if (joe.cardRequest) setWorkspace(current => openCard(current, joe.cardRequest!.card));
+    const card = joe.cardRequest?.card;
+    if (card === 'costs' || card === 'settings') setWorkspace(current => openCard(current, card));
   }, [joe.cardRequest]);
   function open(card: CardId) { setOverview(false); setWorkspace(current => openCard(current, card)); }
   const conversationPrimary = workspace.primary === 'conversation';
