@@ -11,7 +11,7 @@ const iconButton = 'grid size-[30px] shrink-0 place-items-center rounded-full bg
 export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady }: {
   text: string;
   onTextChange: Dispatch<SetStateAction<string>>;
-  onSend: (text: string) => Promise<boolean>;
+  onSend: (text: string, spoken?: boolean, validate?: () => Promise<boolean>) => Promise<boolean>;
   ready: boolean;
   busy: boolean;
   sessionId: string;
@@ -32,13 +32,14 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
     onTextChange(draft);
     setSubmitting(true); setSendError('');
     try {
-      if (spoken) {
-        const result = await api<{ text: string }>('/validate-transcript', jsonBody({ sessionId, text: spoken }));
-        if (!result.text) { onTextChange(current => current === draft ? text : current); setSendError('未识别到中文或英文'); return; }
-      }
       onTextChange(current => current === draft ? '' : current);
-      if (!await onSend(draft)) onTextChange(current => current || draft);
-    } catch { setSendError('识别失败，请重试'); }
+      const validate = spoken ? async () => {
+        const result = await api<{ text: string }>('/validate-transcript', jsonBody({ sessionId, text: spoken }));
+        if (!result.text) setSendError('未识别到中文或英文');
+        return Boolean(result.text);
+      } : undefined;
+      if (!await onSend(draft, false, validate)) onTextChange(current => current || draft);
+    } catch { onTextChange(current => current || draft); setSendError('识别失败，请重试'); }
     finally { setSubmitting(false); }
   }
   return (

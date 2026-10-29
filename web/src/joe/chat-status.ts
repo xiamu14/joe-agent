@@ -17,3 +17,9 @@ const statuses = {
 export function chatStatus(state: AgentState, connected: boolean) {
   return !connected && state !== 'offline' ? { state: 'thinking', label: '连接中' } as const : statuses[state];
 }
+
+export function chatError(state: AgentState, error: string, answerStatus?: string) {
+  if (answerStatus === 'error') return 'answer';
+  if (state === 'error') return 'answer';
+  return error ? 'notice' : null;
+}

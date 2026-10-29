@@ -19,6 +19,7 @@
     "@mastra/memory": "^1.39.0",
     "@mastra/observability": "^1.21.0",
     "ai": "^6.0.314",
+    "marked": "^18.1.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {

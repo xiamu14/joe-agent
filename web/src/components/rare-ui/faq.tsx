@@ -33,6 +33,7 @@ export type FaqItem = {
   id: string;
   question: string;
   answer: ReactNode;
+  beforeAnswer?: ReactNode;
 };
 
 function RareMark() {
@@ -98,6 +99,7 @@ function Answer({
 }: BubbleProps & { avatar: ReactNode }) {
   return (
     <AnimatePresence mode="popLayout" initial={false}>
+      {open && item.beforeAnswer && <Fragment key="before-answer">{item.beforeAnswer}</Fragment>}
       {open && (
         <motion.div
           key="answer"

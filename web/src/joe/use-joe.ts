@@ -124,7 +124,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     setBusy(false);
     setState('interrupted');
     setMessages((previous) =>
-      previous.map((m) =>
+      previous.filter(m => !(m.turnId === old && m.status === 'pending')).map((m) =>
         m.turnId === old && m.role === 'assistant'
           ? { ...m, text: streamed.get(m.id) ?? m.text, visibleText: undefined, status: m.status === 'complete' ? 'complete' : 'interrupted' }
           : m,
@@ -161,7 +161,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       setSaving(false);
     }
   }, [saving]);
-  async function send(text: string, spoken = false) {
+  async function send(text: string, spoken = false, validate?: () => Promise<boolean>) {
     if (uploading || !sessionId || (!text.trim() && !attachments.length)) return false;
     const model = settingsRef.current?.model || bootstrap?.models[0]?.id;
     if (!bootstrap?.configured.llm || !model) {
@@ -181,6 +181,8 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
     setExpression({ emotion: 'calm', intensity: 0.35 });
     const language = settingsRef.current?.voiceLanguage || 'auto';
     const signal = abort.current.signal;
+    const optimisticId = `pending-${id}`;
+    setMessages(old => [...old, { id: optimisticId, sessionId, turnId: id, role: 'user', text, status: 'pending', model, expression: { emotion: 'calm', intensity: 0.35 }, attachments, createdAt: Date.now() }]);
     let completed = false;
     let assistantId = '',
       failed = false,
@@ -192,7 +194,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
         assistantId = event.assistant.id;
         accepted = true;
         setAttachments([]);
-        setMessages((old) => [...old, event.user!, { ...event.assistant!, visibleText: turnVoice.current ? '' : undefined }]);
+        setMessages((old) => [...old.filter(m => m.id !== optimisticId), event.user!, { ...event.assistant!, visibleText: turnVoice.current ? '' : undefined }]);
       }
       if (event.type === 'state' && event.state) setState(event.state);
       if (event.type === 'expression' && event.expression) {
@@ -234,6 +236,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       }
     };
     try {
+      if (validate && !await validate()) { if (turn.current === id) setState('idle'); return false; }
       await cancellation.current;
       if (turn.current !== id) return false;
       const response = await fetch('/joe-api/chat', {
@@ -282,7 +285,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
           }
         }
       }
-      return true;
+      return accepted;
     } catch (e) {
       if (turn.current === id) {
         voice.current?.stop();
@@ -296,6 +299,7 @@ export function useJoe({ sessionKey = 'joe.session', voiceOutput = true, isolate
       }
       return accepted;
     } finally {
+      if (!accepted && mounted.current) setMessages(old => old.filter(m => m.id !== optimisticId));
       if (turn.current === id) {
         setBusy(false);
         void refreshUsage();

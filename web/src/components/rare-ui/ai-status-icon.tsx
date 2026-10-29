@@ -126,7 +126,7 @@ export function AiStatusIcon({ state }: AiStatusIconProps) {
         case 'error':
             return (
                 <motion.span animate={reduced ? undefined : { x: [0, -3, 3, -2, 2, 0] }} transition={{ duration: 0.45, delay: 0.1 }} className="text-[#868593]">
-                    <CloudAlert size={16} strokeWidth={2} />
+                    <CloudAlert size={18} strokeWidth={2} />
                 </motion.span>
             )
         default:

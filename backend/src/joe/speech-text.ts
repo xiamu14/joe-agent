@@ -1,3 +1,4 @@
+import { speechMarkdown } from './speech-markdown';
 import { trackGeneration } from './usage-sync';
 import { randomUUID } from 'node:crypto';
 import { Agent } from '@mastra/core/agent';
@@ -69,7 +70,7 @@ ${input.purpose === 'translation' ? 'This request is a reading aid, not speech. 
           .filter((m) => m.role === 'user')
           .slice(-4)
           .map((m) => m.text),
-        answer: message.text,
+        answer: input.purpose === 'speech' ? speechMarkdown(message.text) : message.text,
       }),
       {
         abortSignal: signal,
