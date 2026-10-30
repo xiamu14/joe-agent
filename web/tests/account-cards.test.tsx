@@ -100,7 +100,7 @@ test('cost details use only provider USD bills in both compact and expanded pane
   for (const compact of [true, false]) {
     const html = renderToStaticMarkup(<CostPanel usage={usage} compact={compact} />);
     for (const text of ['今日合计', '总计', '$0.0049', '$0.1228', 'UTC'])
-      assert.ok(html.includes(text), text);
+      assert.ok(html.replace(/<[^>]+>/g, '').includes(text), text);
     assert.doesNotMatch(html, /9999|19,998|待确认|含估算|账户余额|credits|\$\d+\.\d{5}/);
     if (compact) {
       assert.doesNotMatch(html, /费用明细|思考模型|语音生成|role="table"/);
