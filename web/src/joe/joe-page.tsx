@@ -5,7 +5,7 @@ import { ThoughtOrb } from '../components/thought-orb';
 import { MessageList } from '../components/conversation/messages';
 import { Composer } from '../components/conversation/composer';
 import { SettingsPanel } from '../components/panels/settings-panel';
-import { VoiceAccountPanel } from '../components/panels/voice-account-panel';
+import { CostPanel } from '../components/panels/cost-panel';
 import { Background } from '../components/workspace/background';
 import { CardFrame } from '../components/workspace/card-frame';
 import { VoicePermission } from '../components/workspace/overlays';
@@ -61,7 +61,7 @@ export function JoePage() {
             onPromote={() => workspace.ordinary && open(workspace.ordinary)} onSwap={swap}
             onClose={() => workspace.ordinary && setWorkspace(current => closeCard(current, workspace.ordinary!))}>
             <div className="min-h-0 flex-1">
-              <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><VoiceAccountPanel usage={joe.bootstrap?.usage} /></div>
+              <div hidden={workspace.ordinary !== 'costs'} className={panelBody}><CostPanel usage={joe.bootstrap?.usage} /></div>
               <div hidden={workspace.ordinary !== 'settings'} className={panelBody}><SettingsPanel bootstrap={joe.bootstrap} saving={joe.saving} saveSettings={joe.saveSettings} /></div>
             </div>
           </CardFrame>

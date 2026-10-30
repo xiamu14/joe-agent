@@ -95,6 +95,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setGreetingToPlay(session.created ? session.messages.find(m => m.kind === 'greeting')?.id || '' : '');
       settingsRef.current = config.settings;
       setBootstrap(config);
+      void refreshUsage();
       setState('idle');
       setError('');
     } catch (e) {
@@ -102,7 +103,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setState('offline');
       setError(e instanceof Error ? e.message : '无法连接 Joe 服务');
     }
-  }, [sessionKey, initialCards]);
+  }, [sessionKey, initialCards, refreshUsage]);
   useEffect(() => {
     if (!sessionId) return;
     const source = new EventSource(`/joe-api/widget-events?sessionId=${encodeURIComponent(sessionId)}&cursor=${widgetCursor}`);

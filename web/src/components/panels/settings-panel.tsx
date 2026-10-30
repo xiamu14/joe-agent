@@ -1,11 +1,15 @@
 import { motion } from 'motion/react';
 import { memo } from 'react';
-import { contentSurface, glass, switchTrack, switchThumb } from '../workspace/material';
-import { Switch } from '@base-ui/react/switch';
-import { Select } from '@base-ui/react/select';
+import { SettingsSelect, SettingsSwitch } from '../rare-ui/settings-controls';
 import type { useJoe } from '../../joe/use-joe';
 export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, saveSettings }: Pick<ReturnType<typeof useJoe>, 'bootstrap' | 'saving' | 'saveSettings'>) {
   const settings = bootstrap?.settings;
+  const configured = bootstrap?.configured;
+  const inputProvider = configured?.voiceProviders?.asr || '语音';
+  const outputProvider = configured?.voiceProviders?.tts || '语音';
+  const voiceConnections: [string, boolean | undefined][] = inputProvider === outputProvider
+    ? [[inputProvider, configured?.asr && configured?.tts]]
+    : [[`${inputProvider} 输入`, configured?.asr], [`${outputProvider} 输出`, configured?.tts]];
   const voiceChoices = [
     { value: 'auto', label: '自动' },
     { value: 'en', label: '英文' },
@@ -21,61 +25,36 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
             语音回答
           </motion.label>
         </motion.div>
-        <Switch.Root
+        <SettingsSwitch
           id="voice-answer"
           checked={settings?.voice ?? true}
-          disabled={!settings || saving}
+          disabled={!settings}
+          busy={saving}
           onCheckedChange={(voice) => settings && void saveSettings({ ...settings, voice })}
-          className={switchTrack}
-        >
-          <Switch.Thumb className={switchThumb} />
-        </Switch.Root>
+        />
       </motion.div>
       <motion.div className="mt-4 flex items-center justify-between">
         <motion.label htmlFor="default-muted" className="text-sm">默认静音</motion.label>
-        <Switch.Root id="default-muted" checked={settings?.defaultMuted ?? false}
-          disabled={!settings || saving}
+        <SettingsSwitch id="default-muted" checked={settings?.defaultMuted ?? false}
+          disabled={!settings}
+          busy={saving}
           onCheckedChange={defaultMuted => settings && void saveSettings({ ...settings, defaultMuted })}
-          className={switchTrack}>
-          <Switch.Thumb className={switchThumb} />
-        </Switch.Root>
+        />
       </motion.div>
       <motion.label id="voice-language-label" className="mt-4 mb-2 block text-xs text-white/60">
         语音语言
       </motion.label>
-      <Select.Root
+      <SettingsSelect
         value={settings?.voiceLanguage || 'auto'}
         items={voiceChoices}
-        disabled={!settings || saving}
+        disabled={!settings}
+        busy={saving}
         onValueChange={(value) => {
           if (settings && (value === 'auto' || value === 'en' || value === 'zh'))
             void saveSettings({ ...settings, voiceLanguage: value });
         }}
-      >
-        <Select.Trigger
-          className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-xs text-white outline-none disabled:opacity-40 ${contentSurface}`}
-          aria-labelledby="voice-language-label"
-        >
-          <Select.Value />
-          <Select.Icon>⌄</Select.Icon>
-        </Select.Trigger>
-        <Select.Portal>
-          <Select.Positioner sideOffset={8} className="z-[120]">
-            <Select.Popup className={`rounded-2xl p-1 ${glass}`}>
-              {voiceChoices.map((choice) => (
-                <Select.Item
-                  key={choice.value}
-                  value={choice.value}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm text-white data-highlighted:bg-white/10"
-                >
-                  <Select.ItemText>{choice.label}</Select.ItemText>
-                  <Select.ItemIndicator className="ml-3">✓</Select.ItemIndicator>
-                </Select.Item>
-              ))}
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
+        labelledBy="voice-language-label"
+      />
       <motion.p className="mt-2 text-[10px] text-white/60 hidden">
         English 音色{bootstrap?.configured.voiceProfiles?.en ? '已配置' : '未配置'} · Chinese 音色
         {bootstrap?.configured.voiceProfiles?.zh ? '已配置' : '未配置'}
@@ -83,45 +62,23 @@ export const SettingsPanel = memo(function SettingsPanel({ bootstrap, saving, sa
       <motion.label id="model-label" className="mt-4 mb-2 block text-xs text-white/60">
         思考模型
       </motion.label>
-      <Select.Root
+      <SettingsSelect
         value={model}
         items={bootstrap?.models.map((m) => ({ value: m.id, label: m.label })) || []}
         onValueChange={(value) => {
           if (value && settings) void saveSettings({ ...settings, model: value });
         }}
-        disabled={!bootstrap?.models.length || saving}
-      >
-        <Select.Trigger
-          className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-xs text-white outline-none disabled:opacity-40 ${contentSurface}`}
-          aria-labelledby="model-label"
-        >
-          <Select.Value placeholder="等待配置" />
-          <Select.Icon>⌄</Select.Icon>
-        </Select.Trigger>
-        <Select.Portal>
-          <Select.Positioner sideOffset={8} className="z-[120]">
-            <Select.Popup className={`max-h-64 min-w-56 overflow-auto rounded-2xl p-1 ${glass}`}>
-              {bootstrap?.models.map((m) => (
-                <Select.Item
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm text-white data-highlighted:bg-white/10"
-                  key={m.id}
-                  value={m.id}
-                >
-                  <Select.ItemText>{m.label}</Select.ItemText>
-                  <Select.ItemIndicator className="ml-3">✓</Select.ItemIndicator>
-                </Select.Item>
-              ))}
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
+        disabled={!bootstrap?.models.length}
+        busy={saving}
+        labelledBy="model-label"
+        placeholder="等待配置"
+      />
       <motion.div className="my-4 h-px bg-white/10" />
       <motion.p className="text-xs text-white/60">连接状态</motion.p>
       <motion.ul className="mt-3 space-y-2 text-[11px] text-white/60">
         {[
           ['OpenRouter', bootstrap?.configured.llm],
-          [`${bootstrap?.configured.voiceProviders?.asr || '语音'} 输入`, bootstrap?.configured.asr],
-          [`${bootstrap?.configured.voiceProviders?.tts || '语音'} 输出`, bootstrap?.configured.tts],
+          ...voiceConnections,
           ['知识库', bootstrap?.configured.zendocs],
         ].map(([name, ready]) => (
           <motion.li key={String(name)} className="flex justify-between">

@@ -50,7 +50,7 @@ export function YouTubeCard({ results, context, playback, onPlaybackHandled }: {
       expandedHeight={selected ? 'min(1280px, calc(100cqh - 24px))' : 'min(900px, calc(100cqh - 24px))'}
       surfaceClassName={`flex flex-col overflow-hidden rounded-[24px] ${selected ? 'bg-black' : 'bg-white'} text-black`} label="视频卡片" onExpand={() => { if (selected) video.play(); }} onClose={video.pause}>
       {layoutExpanded => <>
-      <motion.div className="flex h-14 shrink-0 items-center bg-white justify-between gap-3 px-5 text-xs">
+      <motion.div data-card-header className="flex h-14 shrink-0 items-center bg-white justify-between gap-3 px-5 text-xs">
         <motion.span className="flex items-center gap-2 text-black/60"><motion.img src="/logos/youtube.svg" alt="" draggable={false} className="h-4 w-auto shrink-0" />YouTube</motion.span>
         {!layoutExpanded && backToList}
       </motion.div>

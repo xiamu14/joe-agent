@@ -1,3 +1,4 @@
+import type { ProviderBilling } from '../../../shared/provider-billing';
 import type { VideoPlaybackRequest } from '../../../shared/video-playback';
 export type Emotion = 'calm' | 'curious' | 'joy' | 'empathy' | 'encouraging' | 'serious' | 'concerned';
 export type AgentState =
@@ -42,6 +43,7 @@ export type Settings = {
 };
 export type Cost = { known: number; pending: number };
 export type Usage = {
+  billing?: ProviderBilling;
   input: number;
   output: number;
   tokensPending: number;

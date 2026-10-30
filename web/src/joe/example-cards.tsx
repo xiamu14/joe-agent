@@ -6,7 +6,7 @@ import { TiltCard } from './tilt-card';
 export function ExampleCards() {
   return <>
       <TiltCard id="idea" className="h-[355px]" surfaceClassName="flex flex-col rounded-[30px] bg-[#f5f5f2] p-7 text-[#232323] max-sm:p-4" label="灵感卡片">
-        <motion.div className="flex items-center justify-between text-[10px] text-black/40">
+        <motion.div data-card-header className="flex items-center justify-between text-[10px] text-black/40">
           <motion.span className="rounded-full bg-black/5 px-3 py-1.5">灵感</motion.span>
           <motion.span>01</motion.span>
         </motion.div>
@@ -15,7 +15,7 @@ export function ExampleCards() {
 
       </TiltCard>
       <TiltCard id="question" surfaceClassName="rounded-[25px] bg-[#7928f5] p-5 pb-7 max-sm:p-3" label="问答卡片">
-        <motion.div className="mb-5 flex items-center justify-between text-[10px] text-white/60">
+        <motion.div data-card-header className="mb-5 flex items-center justify-between text-[10px] text-white/60">
           <motion.span>换个角度</motion.span><motion.span>↗</motion.span>
         </motion.div>
         <Faq items={[{ id: 'idea', question: '如果再大胆一点？', answer: '让灵感先发生，答案慢慢来。' }]} defaultValue="idea" accent="#5b16cd" avatar={null} className="[&_[data-slot=faq-question]]:max-w-full [&_[data-slot=faq-question]]:bg-white/15! [&_[data-slot=faq-question]]:text-[13px] [&_[data-slot=faq-question]]:text-white! [&_[data-slot=faq-question]]:shadow-none! [&_[role=region]]:text-xs" />

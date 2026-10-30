@@ -93,7 +93,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
     >
       <motion.div initial={{ y: reduced || scene.placement.entry === 'scale' ? 0 : 20 }} animate={{ y: 0 }} exit={{ y: reduced || scene.placement.entry === 'scale' ? 0 : 12 }} transition={{ duration: reduced ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }} className="h-full">
       <motion.div animate={controls} className="h-full [backface-visibility:hidden] [transform-style:preserve-3d]">
-        <motion.div className={`relative h-full ${layoutExpanded ? `${expandedScroll ? 'overflow-y-auto' : 'overflow-hidden'} [&>div:nth-of-type(2)]:pr-20` : ''} ${surfaceClassName}`}
+        <motion.div className={`relative h-full ${layoutExpanded ? `${expandedScroll ? 'overflow-y-auto' : 'overflow-hidden'} [&>[data-card-header]]:pr-20` : ''} ${surfaceClassName}`}
           style={{ maxHeight: layoutExpanded ? '100cqh' : undefined, rotateX: reduced || selected || blocked || scene.dragging ? 0 : rotateX, rotateY: reduced || selected || blocked || scene.dragging ? 0 : rotateY, rotateZ: layoutExpanded ? 0 : position.rotation }}
           animate={selected
             ? { y: 0, scale: 1, boxShadow: '0 32px 96px rgba(0,0,0,0.4)' }

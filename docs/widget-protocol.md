@@ -125,7 +125,7 @@ HTTP 提交命令，独立 SSE 订阅数据；不复用随回答结束而关闭�
 
 | widgetType | 当前来源 | 目标绑定 |
 | --- | --- | --- |
-| builtin.costs | useJoe.bootstrap.usage，`/usage` 轮询；`/voice-account` | usage / accounts 两个资源 |
+| builtin.costs | useJoe.bootstrap.usage.billing，`/usage` 轮询供应商美元汇总 | billing 资源 |
 | builtin.settings | bootstrap.settings、models、configured；PUT `/settings` | settings / capabilities 资源，保存动作 |
 | builtin.weather | `/weather` | 按地点和日期查询的天气资源 |
 | youtube.video | 固定视频播放器 | 搜索结果资源、选中视频引用；播放状态留在目标客户端 |

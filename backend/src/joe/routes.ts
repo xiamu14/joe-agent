@@ -14,7 +14,7 @@ import { chat, cancelTurn } from './chat';
 import { synthesize, transcribe, startVoiceInput } from './voice';
 import { prepareSpeech } from './speech-text';
 import { voiceAccounts } from './voice-account';
-import { syncUsage } from './usage-sync';
+import { providerBilling } from './provider-billing';
 import { currentWeather } from './weather';
 import { conversationMessages } from './conversations';
 import { mastraStorage } from './memory';
@@ -135,8 +135,8 @@ export const routes = [
     return c.json(await voiceAccounts());
   }),
   route('/usage', 'GET', async (c) => {
-    await syncUsage();
-    return c.json(store.summary(store.settings().timezone));
+    c.header('Cache-Control', 'no-store');
+    return c.json({ ...store.summary(store.settings().timezone), billing: await providerBilling() });
   }),
   route('/weather', 'POST', async (c) => {
     const { clientIp } = z.object({ clientIp: z.string().max(45).optional() }).parse(await json(c));
