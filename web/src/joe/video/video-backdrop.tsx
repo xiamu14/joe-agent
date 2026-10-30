@@ -13,7 +13,13 @@ export function VideoBackdrop({ active }: { active: boolean }) {
     if (!card) return;
     let timer: ReturnType<typeof setTimeout>;
     const measure = () => {
-      const { left: x, top: y, width: w, height: h } = card.getBoundingClientRect();
+      const rect = card.getBoundingClientRect();
+      const canvas = scene.canvas.current?.getBoundingClientRect();
+      if (!canvas) return;
+      // The canvas clips cards: never punch a hole over content outside that canvas.
+      const x = Math.max(0, rect.left, canvas.left), y = Math.max(0, rect.top, canvas.top);
+      const w = Math.max(0, Math.min(window.innerWidth, rect.right, canvas.right) - x);
+      const h = Math.max(0, Math.min(window.innerHeight, rect.bottom, canvas.bottom) - y);
       const r = Math.min(24, w / 2, h / 2);
       // Keep the live iframe in place; only the surrounding viewport is shaded.
       const viewport = `M0 0 H${window.innerWidth} V${window.innerHeight} H0 Z`;

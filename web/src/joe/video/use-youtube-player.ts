@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { YouTubePlayer } from './youtube-api';
 import { mountYouTubePlayer, videoId } from './mount-youtube-player';
 
-export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active = true, tracking?: BehaviorContext & { selectionId: string }) {
+export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active = true, tracking?: BehaviorContext & { selectionId: string }, onPlaybackStarted?: () => void) {
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<YouTubePlayer | null>(null);
   const expandedRef = useRef(expanded);
@@ -36,7 +36,7 @@ export function useYouTubePlayer(expanded: boolean, selectedId = videoId, active
       },
       onPlaying: value => { observer?.state(value); setPlaying(value); },
       onError: setError,
-      onPlaybackStarted: () => { setAutoplayBlocked(false); setError(''); },
+      onPlaybackStarted: () => { setAutoplayBlocked(false); setError(''); onPlaybackStarted?.(); },
       onAutoplayBlocked: () => { setAutoplayBlocked(true); setPlaying(false); },
     }, selectedId);
     return () => { observer?.dispose(); player.current = null; dispose(); };

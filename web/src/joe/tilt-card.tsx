@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
 import { motion, useIsPresent, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Icon } from '../components/workspace/icon';
 import { Button } from '@base-ui/react/button';
-import { Minus } from 'lucide-react';
+import { Minus, X } from 'lucide-react';
 import type { WidgetCard } from './widget-visibility';
 import { cardTilt } from './card-tilt';
 import { cardControls } from './card-expansion';
@@ -14,7 +13,7 @@ import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
 const MotionButton = motion.create(Button);
 const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
-export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
+export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedActions, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
   id: CanvasCardId;
   children: ReactNode | ((layoutExpanded: boolean) => ReactNode);
   className?: string;
@@ -22,6 +21,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   label: string;
   onExpand?: () => void;
   onClose?: () => void;
+  expandedActions?: ReactNode;
   expandedWidth?: string;
   expandedHeight?: string;
   expandedScroll?: boolean;
@@ -38,8 +38,9 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   const x = useMotionValue(0), y = useMotionValue(0);
   const rotateX = useSpring(x, spring), rotateY = useSpring(y, spring);
   const drag = useCardDrag(id, scene, !scene.placement.draggable || Boolean(scene.selection) || flipping, reset);
-  const panX = useTransform(() => layoutExpanded ? scene.scrollX.get() : scene.placement.pannable ? scene.panX.get() + drag.dx.get() : 0);
-  const panY = useTransform(() => layoutExpanded ? scene.scrollY.get() : scene.placement.pannable ? scene.panY.get() + drag.dy.get() : 0);
+  // Expanded canvases use overflow: clip, which resets their actual scroll offset.
+  const panX = useTransform(() => layoutExpanded ? 0 : scene.placement.pannable ? scene.panX.get() + drag.dx.get() : 0);
+  const panY = useTransform(() => layoutExpanded ? 0 : scene.placement.pannable ? scene.panY.get() + drag.dy.get() : 0);
   const active = scene.hovered === id && !reduced && !selected && !blocked && !scene.dragging;
   const position = scene.layout[id];
   const width = layoutExpanded ? expandedWidth : cardWidths[id];
@@ -100,9 +101,10 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
             : active ? { y: scene.foreground === id ? -6 : -2, scale: scene.foreground === id ? 1.015 : 1.005, boxShadow: '0 18px 55px rgba(0,0,0,0.22)' }
               : { y: 0, scale: 1, boxShadow: '0 0 0 rgba(0,0,0,0)' }} transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 32 }}>
           <motion.button type="button" aria-label={`展开${label}`} aria-expanded={expanded} onClick={open} disabled={selected} className="sr-only focus:not-sr-only focus:absolute focus:right-3 focus:top-3 focus:z-10 focus:rounded-full focus:bg-black/10 focus:px-3 focus:py-2">展开</motion.button>
-          {layoutExpanded && <motion.div className="absolute right-3 top-3 z-10 flex gap-2">
-            <MotionButton type="button" data-close-card aria-label={`关闭${label}`} onClick={() => { onClose?.(); scene.onRemove?.(id as WidgetCard); }} disabled={flipping || !scene.onRemove} className="grid size-8 place-items-center rounded-full bg-black/10" whileTap={{ scale: 0.95 }}><Icon name="close" className="size-4" /></MotionButton>
-            <MotionButton type="button" data-collapse-card aria-label={`收起${label}`} onClick={close} disabled={flipping} className="grid size-8 place-items-center rounded-full bg-black/10" whileTap={{ scale: 0.95 }}><Minus className="size-4" aria-hidden="true" /></MotionButton>
+          {layoutExpanded && <motion.div className="absolute right-3 top-3 z-10 flex h-8 items-center gap-2">
+            {expandedActions}
+            <MotionButton type="button" data-close-card aria-label={`关闭${label}`} onClick={() => { onClose?.(); scene.onRemove?.(id as WidgetCard); }} disabled={flipping || !scene.onRemove} className="grid size-[21.333px] place-items-center rounded-full bg-[oklch(65.32%_0.2335_25.74)] text-white" whileTap={{ scale: 0.95 }}><X className="size-[10.667px]" strokeWidth={3} aria-hidden="true" /></MotionButton>
+            <MotionButton type="button" data-collapse-card aria-label={`收起${label}`} onClick={close} disabled={flipping} className="grid size-[21.333px] place-items-center rounded-full bg-[oklch(0.84_0_0)] text-white" whileTap={{ scale: 0.95 }}><Minus className="size-[10.667px]" strokeWidth={3} aria-hidden="true" /></MotionButton>
           </motion.div>}
           {typeof children === 'function' ? children(layoutExpanded) : children}
         </motion.div>

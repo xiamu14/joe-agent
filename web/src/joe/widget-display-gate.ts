@@ -1,4 +1,4 @@
-export function createWidgetDisplayGate(apply: (event: { type: string; instance?: unknown; resource?: unknown; card?: unknown; turnId?: string }) => void) {
+export function createWidgetDisplayGate(apply: (event: { type: string; instance?: unknown; resource?: unknown; playback?: unknown; card?: unknown; turnId?: string }) => void) {
   let waiting = false;
   let pending: Parameters<typeof apply>[0][] = [];
   return {

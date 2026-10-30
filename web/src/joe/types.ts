@@ -1,3 +1,4 @@
+import type { VideoPlaybackRequest } from '../../../shared/video-playback';
 export type Emotion = 'calm' | 'curious' | 'joy' | 'empathy' | 'encouraging' | 'serious' | 'concerned';
 export type AgentState =
   | 'idle'
@@ -96,6 +97,7 @@ export type AgentEvent = {
   card?: 'costs' | 'settings' | 'weather' | 'video';
   instance?: unknown;
   resource?: unknown;
+  playback?: VideoPlaybackRequest;
 };
 
 export type VoiceAccount = {

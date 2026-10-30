@@ -1,3 +1,4 @@
+import { isVideoPlaybackRequest, type VideoPlaybackRequest } from '../../../shared/video-playback';
 import { startBehaviorDelivery } from './behavior/delivery';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -53,10 +54,16 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   const [voicePending, setVoicePending] = useState(false);
   const [widgetCursor, setWidgetCursor] = useState(0);
   useEffect(() => { startBehaviorDelivery(); }, []);
+  const receivedPlayback = useRef<string | undefined>(undefined);
+  const [videoPlayback, setVideoPlayback] = useState<VideoPlaybackRequest>();
   const [widgetResources, setWidgetResources] = useState<WidgetResources>({});
   const [widgetVisibility, setWidgetVisibility] = useState<WidgetVisibility>({});
   const [cardRequest, setCardRequest] = useState<{ card: NonNullable<AgentEvent['card']>; turnId: string } | null>(null);
   const displayGate = useRef(createWidgetDisplayGate(event => {
+    if (event.type === 'video.play' && isVideoPlaybackRequest(event.playback) && receivedPlayback.current !== event.playback.requestId) {
+      receivedPlayback.current = event.playback.requestId;
+      setVideoPlayback(event.playback);
+    }
     if (event.type === 'widget.snapshot') setWidgetVisibility(current => applyWidgetSnapshot(current, event.instance));
     if (event.type === 'resource.snapshot') setWidgetResources(current => applyResourceSnapshot(current, event.resource));
     if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings' || event.card === 'weather' || event.card === 'video') && event.turnId) setCardRequest({ card: event.card, turnId: event.turnId });
@@ -80,6 +87,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       if (signal?.aborted || !mounted.current) return;
       localStorage.setItem(sessionKey, session.id);
       setWidgetCursor(session.widgetCursor ?? 0);
+      setVideoPlayback(undefined);
       setSessionId(session.id);
       setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
       setWidgetVisibility((session.widgets ?? []).reduce<WidgetVisibility>(applyWidgetSnapshot, {}));
@@ -227,7 +235,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
-      if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot' || event.type === 'card.open') displayGate.receive(event);
+      if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot' || event.type === 'card.open' || event.type === 'video.play') displayGate.receive(event);
       if (event.type === 'messages' && event.user && event.assistant) {
         assistantId = event.assistant.id;
         accepted = true;
@@ -416,6 +424,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setWidgetCursor(session.widgetCursor ?? 0);
       setWidgetVisibility((session.widgets ?? []).reduce<WidgetVisibility>(applyWidgetSnapshot, {}));
       setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
+      setVideoPlayback(undefined);
       setSessionId(session.id);
       setMessages(session.messages);
       setGreetingToPlay(session.messages.find(m => m.kind === 'greeting')?.id || '');
@@ -440,6 +449,8 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     playing,
     voicePending,
     cardRequest,
+    videoPlayback,
+    consumeVideoPlayback: (requestId: string) => setVideoPlayback(current => current?.requestId === requestId ? undefined : current),
     widgetVisibility,
     removeWidget,
     openSettingsWidget,

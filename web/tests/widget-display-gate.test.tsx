@@ -15,3 +15,16 @@ test('holds snapshots until the response is visible, then applies them in order'
   gate.receive({ type: 'widget.snapshot' });
   expect(received).toHaveLength(4);
 });
+
+test('play requests keep their payload and follow widget visibility before opening', () => {
+  const received: unknown[] = [];
+  const gate = createWidgetDisplayGate(event => received.push(event));
+  const playback = { requestId: 'request', video: { id: 'XWdrTHssIUQ' } };
+  gate.begin();
+  gate.receive({ type: 'widget.snapshot' });
+  gate.receive({ type: 'video.play', playback });
+  gate.receive({ type: 'card.open', card: 'video' });
+  expect(received).toEqual([]);
+  gate.release();
+  expect(received).toEqual([{ type: 'widget.snapshot' }, { type: 'video.play', playback }, { type: 'card.open', card: 'video' }]);
+});

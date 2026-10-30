@@ -10,7 +10,6 @@ type Selection = { id: CanvasCardId; expanded: boolean } | null;
 
 export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnapshot['pan'], onSave: (snapshot: CanvasSnapshot) => void, onRemove?: (id: WidgetCard) => void) {
   const [placement, setPlacement] = useState<LayoutPlacement>({ layout, draggable: true, pannable: true, entry: 'scale', overflow: 'clip' });
-  const scrollX = useMotionValue(0), scrollY = useMotionValue(0);
   const canvas = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Selection>(null);
   const [foreground, setForeground] = useState<CanvasCardId | null>(null);
@@ -38,7 +37,7 @@ export function useCanvasSceneState(layout: CanvasLayout, initialPan: CanvasSnap
   const finishClose = useCallback((id: CanvasCardId) => {
     setSelection(current => current?.id === id && !current.expanded ? null : current);
   }, []);
-  return { canvas, layout: placement.layout, freeLayout: layout, placement, setPlacement, scrollX, scrollY, selection, hovered, hoverIntent, foreground, setForeground, dragging, setDragging, suppressClick, save, moveCard, setHovered, panX, panY, open, close, dismiss, finishClose, onRemove };
+  return { canvas, layout: placement.layout, freeLayout: layout, placement, setPlacement, selection, hovered, hoverIntent, foreground, setForeground, dragging, setDragging, suppressClick, save, moveCard, setHovered, panX, panY, open, close, dismiss, finishClose, onRemove };
 }
 
 export type CanvasScene = ReturnType<typeof useCanvasSceneState>;

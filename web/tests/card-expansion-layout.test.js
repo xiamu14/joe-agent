@@ -14,7 +14,7 @@ function fixture() {
   const context = vm.createContext({
     React: { createElement: (type, props, ...children) => ({ type, props, children }) },
     motion: new Proxy({ create: () => 'button' }, { get: (obj, key) => obj[key] ?? key }),
-    Button: 'button', Minus: 'minus', Icon: 'icon',
+    Button: 'button', Minus: 'minus', X: 'close',
     useCallback: fn => fn, useEffect() {}, useRef: () => ({ current: null }),
     useIsPresent: () => true, useMotionValue: () => value, useSpring: () => value,
     useTransform: () => value, useCardDrag: () => ({ dx: value, dy: value }),

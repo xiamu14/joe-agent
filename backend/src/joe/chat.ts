@@ -1,3 +1,4 @@
+import { videoPlayOutputSchema } from './video-play-tool';
 import { desktopExecutor } from './desktop';
 import { nanoid } from 'nanoid';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
@@ -187,6 +188,15 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
                   emit('resource.snapshot', { resource: result.data.widget.resource });
                   emit('widget.snapshot', { instance: result.data.widget.instance });
                   if (result.data.widget.instance.visible) emit('card.open', { card: chunk.payload.toolName === 'searchYouTube' ? 'video' : 'weather' });
+                }
+              }
+              if (chunk.payload.toolName === 'playYouTube') {
+                const result = videoPlayOutputSchema.safeParse(chunk.payload.result);
+                if (result.success) {
+                  if (result.data.widget) emit('resource.snapshot', { resource: result.data.widget.resource });
+                  emit('widget.snapshot', { instance: result.data.instance });
+                  if (result.data.playback) emit('video.play', { playback: result.data.playback });
+                  emit('card.open', { card: 'video' });
                 }
               }
               const found = z.object({ sources: z.array(sourceSchema) }).safeParse(chunk.payload.result);
