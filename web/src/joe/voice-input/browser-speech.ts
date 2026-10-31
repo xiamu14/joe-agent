@@ -1,4 +1,5 @@
 import { api, jsonBody } from '../api';
+import { browserSpeechError } from './errors';
 
 type Result = { isFinal: boolean; 0: { transcript: string } };
 interface Recognition {
@@ -18,7 +19,7 @@ export function browserSpeechAvailable() {
 }
 const allowed = (value: string) => /^[\p{Script=Han}\p{Script=Latin}\p{Number}\p{Punctuation}\p{Symbol}\s]+$/u.test(value);
 export function startBrowserSpeech(sessionId: string, callbacks: {
-  preview(value: string): void; text(value: string): void; stopped(): void; finished(): void; failed(): void;
+  preview(value: string): void; text(value: string): void; stopped(): void; finished(): void; failed(error: unknown): void;
 }) {
   const browser = window as unknown as { SpeechRecognition?: Constructor; webkitSpeechRecognition?: Constructor };
   const SpeechRecognition = browser.SpeechRecognition || browser.webkitSpeechRecognition;
@@ -49,7 +50,7 @@ export function startBrowserSpeech(sessionId: string, callbacks: {
         try {
           const result = await api<{ text: string }>('/validate-transcript', { ...jsonBody({ sessionId, text: value }), signal: abort.signal });
           if (!cancelled && result.text) callbacks.text(result.text);
-        } catch { if (!cancelled) callbacks.failed(); }
+        } catch (error) { if (!cancelled) callbacks.failed(error); }
         finally { unverified.shift(); if (!cancelled) preview(); }
       });
     }
@@ -57,13 +58,13 @@ export function startBrowserSpeech(sessionId: string, callbacks: {
   };
   recognition.onerror = event => {
     if (cancelled || event.error === 'no-speech' || event.error === 'aborted') return;
-    failed = true; clearTimeout(silence); callbacks.preview(''); callbacks.failed();
+    failed = true; clearTimeout(silence); callbacks.preview(''); callbacks.failed(browserSpeechError(event.error));
   };
   recognition.onend = () => {
     if (cancelled || failed) return;
     if (!finishing) {
       if (speaking) { speaking = false; resetSilence(); }
-      try { recognition.start(); } catch { failed = true; callbacks.failed(); }
+      try { recognition.start(); } catch (error) { failed = true; callbacks.failed(error); }
       return;
     }
     void pending.then(() => { if (!cancelled) callbacks.finished(); });

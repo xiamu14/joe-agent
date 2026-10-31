@@ -17,14 +17,15 @@ export async function transcribe(form: FormData, signal: AbortSignal) {
   if (!/^audio\/(webm|ogg|mp4|wav|mpeg)(;|$)/.test(audio.type)) throw new Error('不支持的录音格式');
   const provider = getVoiceProvider('asr'),
     { config } = provider;
+  let text: Awaited<ReturnType<typeof provider.listen>>;
   try {
-    const text = await provider.listen(audio, {
+    text = await provider.listen(audio, {
       signal: AbortSignal.any([signal, AbortSignal.timeout(90000)]),
     });
-    return { text: form.get('supportedLanguages') === 'zh,en' ? await supportedTranscript(typeof text === 'string' ? text : '', signal) : text };
   } catch (error) {
     throw voiceError(error, '语音识别', config.label);
   }
+  return { text: form.get('supportedLanguages') === 'zh,en' ? await supportedTranscript(typeof text === 'string' ? text : '', signal) : text };
 }
 const speechSchema = z.object({
   sessionId: idSchema,

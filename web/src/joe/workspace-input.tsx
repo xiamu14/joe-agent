@@ -6,10 +6,11 @@ import { VoiceWave } from './voice-wave';
 import { useVoiceLevel } from './use-voice-level';
 import { useDictation } from './use-dictation';
 import { api, jsonBody } from './api';
+import { dictationError } from './voice-input/errors';
 
 const iconButton = 'grid size-[30px] shrink-0 place-items-center rounded-full bg-[#333333] text-white';
 
-export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady, onSettings, layoutMode, onToggleLayout }: {
+export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady, onError, onSettings, layoutMode, onToggleLayout }: {
   text: string;
   onTextChange: Dispatch<SetStateAction<string>>;
   onSend: (text: string, spoken?: boolean, validate?: () => Promise<boolean>) => Promise<boolean>;
@@ -17,12 +18,12 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
   busy: boolean;
   sessionId: string;
   voiceReady: boolean;
+  onError(message: string): void;
   onSettings(): Promise<boolean>;
   layoutMode: 'free' | 'bento'; onToggleLayout(): void;
 }) {
-  const voice = useDictation(sessionId, value => onTextChange(current => `${current}${current && !/\s$/.test(current) ? ' ' : ''}${value}`.slice(0, 12000)));
+  const voice = useDictation(sessionId, value => onTextChange(current => `${current}${current && !/\s$/.test(current) ? ' ' : ''}${value}`.slice(0, 12000)), onError);
   const [submitting, setSubmitting] = useState(false);
-  const [sendError, setSendError] = useState('');
   const recording = voice.state === 'recording' || voice.state === 'connecting';
   const level = useVoiceLevel(voice.state === 'recording', voice.inputStream);
   const preview = voice.preview ? `${text && !/\s$/.test(text) ? ' ' : ''}${voice.preview}` : '';
@@ -33,16 +34,16 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
     const spoken = voice.preview;
     voice.cancel();
     onTextChange(draft);
-    setSubmitting(true); setSendError('');
+    setSubmitting(true); onError('');
     try {
       onTextChange(current => current === draft ? '' : current);
       const validate = spoken ? async () => {
         const result = await api<{ text: string }>('/validate-transcript', jsonBody({ sessionId, text: spoken }));
-        if (!result.text) setSendError('未识别到中文或英文');
+        if (!result.text) onError('未识别到中文或英文');
         return Boolean(result.text);
       } : undefined;
       if (!await onSend(draft, false, validate)) onTextChange(current => current || draft);
-    } catch { onTextChange(current => current || draft); setSendError('识别失败，请重试'); }
+    } catch (error) { onTextChange(current => current || draft); onError(dictationError(error)); }
     finally { setSubmitting(false); }
   }
   return (
@@ -59,7 +60,6 @@ export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessio
           <motion.button type="button" disabled={!canSend} onClick={() => void submit()} aria-label="发送消息" whileTap={{ scale: 0.95 }} className={`${iconButton} enabled:bg-[#FC4C01] disabled:opacity-40`}><ArrowUp size={14} strokeWidth={canSend ? 3 : 1.75} /></motion.button>
         </motion.div>
       </motion.div>
-      {(voice.error || sendError) && <motion.span role="status" className="text-[11px] text-white/60">{voice.error || sendError}</motion.span>}
     </motion.div>
   );
 }

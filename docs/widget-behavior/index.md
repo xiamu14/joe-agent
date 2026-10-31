@@ -21,10 +21,12 @@
 
 - [领域词汇](../../CONTEXT.md)
 - [卡片实例与数据绑定协议 v1](../widget-protocol.md)
-- [外部卡片 v2 规划](../widget-protocol-v2.md)
+- [Widget Unified Protocol V1](../widget-unified-protocol-v1.md)：统一内置与外部 Widget，包含实现计划与迁移文档入口。
 - [Mastra 能力审查](../mastra-capability-audit.md)：桌面回执沿用该审查，不重新全量审计。
 
 本设计是 v1 的行为记录扩展；已接入视频选播路径，不修改现有 WidgetStore 同步协议。历史文档中的迁移完成状态以最新审查为准，不重新引入 UUID 清理。
+
+统一协议迁移后，行为提交经过相同 Bridge 和授权入口；保留本目录已确认的视频测量口径。空间删除属于统一生命周期，不能因旧文档将清除操作后置而绕过。上述调整尚未实施。
 
 ## 访谈规则与进度
 

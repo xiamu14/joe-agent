@@ -2,7 +2,7 @@ import { api, jsonBody } from '../api';
 import { startRealtime } from './realtime';
 
 export async function startRealtimeDictation(stream: MediaStream, context: AudioContext, sessionId: string, token: string, callbacks: {
-  preview(value: string): void; text(value: string): void; error(): void; stopped(): void; finished(): void;
+  preview(value: string): void; text(value: string): void; error(error: unknown): void; stopped(): void; finished(): void;
 }) {
   const abort = new AbortController();
   let closed = false, last = '', revision = 0, validating = false, timer: ReturnType<typeof setTimeout> | undefined;
@@ -28,11 +28,11 @@ export async function startRealtimeDictation(stream: MediaStream, context: Audio
     last = ''; revision++; clearTimeout(timer); callbacks.preview('');
     pending = pending.then(async () => {
       try { const result = await validate(value); if (!closed && result.text) callbacks.text(result.text); }
-      catch { if (!closed) callbacks.error(); }
+      catch (error) { if (!closed) callbacks.error(error); }
     });
   };
   const cleanup = await startRealtime(stream, context, token, {
-    partial, final: commit, transcribing() {}, error: () => { if (!closed) callbacks.error(); },
+    partial, final: commit, transcribing() {}, error: message => { if (!closed) callbacks.error(message); },
   });
   const cancel = () => { if (closed) return; closed = true; clearTimeout(timer); clearTimeout(silence); abort.abort(); cleanup(); callbacks.preview(''); };
   const finish = () => {

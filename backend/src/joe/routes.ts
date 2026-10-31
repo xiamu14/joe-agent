@@ -1,3 +1,4 @@
+import { canvasStore } from './widget-runtime';
 import { behaviorStore } from './behavior-runtime';
 import { summarizeWatches } from './video-behavior';
 import { resourceId as memoryResourceId } from './memory';
@@ -110,12 +111,18 @@ export const routes = [
     return c.json(store.saveSettings(value));
   }),
   route('/session', 'POST', async (c) => {
-    const body = z.object({ id: idSchema.optional(), initialCards: z.array(z.enum(['costs', 'settings', 'weather', 'video'])).max(4).default([]) }).parse(await json(c));
+    const body = z.object({ id: idSchema.optional(), workspaceId: idSchema.optional(), slot: z.number().int().min(0).max(1).optional(), canvasId: idSchema.optional(), initialCards: z.array(z.enum(['costs', 'settings', 'weather', 'video'])).max(4).default([]) }).parse(await json(c));
     const id = store.session(body.id, true);
-    const canvasId = widgetStore.canvasForSession(id);
+    let canvasId = widgetStore.canvasForSession(id);
+    if (body.canvasId) {
+      widgetStore.requireCanvas(body.canvasId);
+      canvasId = body.canvasId;
+    }
+    if (body.workspaceId && body.slot !== undefined) canvasId = canvasStore.bind(body.workspaceId, body.slot, canvasId);
+    store.db.prepare('UPDATE widget_session_canvases SET canvas_id=? WHERE session_id=?').run(canvasId, id);
     widgetStore.initializeCanvas(canvasId, body.initialCards);
     const widgets = widgetStore.snapshot(canvasId);
-    return c.json({ id, canvasId, widgets: widgets.instances, widgetResources: widgets.resources, widgetCursor: widgets.cursor, created: id !== body.id, messages: await conversationMessages(id) });
+    return c.json({ id, canvasId, canvas: canvasStore.metadata(canvasId), widgets: widgets.instances, widgetResources: widgets.resources, widgetCursor: widgets.cursor, created: id !== body.id, messages: await conversationMessages(id) });
   }),
   route('/widget-visibility', 'POST', async (c) => {
     const input = z.object({ sessionId: idSchema, card: z.enum(['costs', 'settings', 'weather', 'video']), visible: z.boolean() }).parse(await json(c));

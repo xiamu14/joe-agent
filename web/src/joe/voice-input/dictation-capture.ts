@@ -3,7 +3,7 @@ import { SilenceDetector } from './turn';
 import { VOICE_ACTIVITY_RMS } from './config';
 
 export function startDictation(stream: MediaStream, context: AudioContext, sessionId: string, callbacks: {
-  text(value: string): void; error(): void; stopped(): void; finished(): void; failed(): void;
+  text(value: string): void; error(error: unknown): void; stopped(): void; finished(): void; failed(): void;
 }) {
   const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
   const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
@@ -52,7 +52,7 @@ export function startDictation(stream: MediaStream, context: AudioContext, sessi
         try {
           const result = await api<{ text: string }>('/transcribe', { method: 'POST', body, signal: abort.signal });
           if (!cancelled && result.text.trim()) callbacks.text(result.text.trim());
-        } catch { if (!cancelled) callbacks.error(); }
+        } catch (error) { if (!cancelled) callbacks.error(error); }
       });
     }
     chunks = []; size = 0; detector = new SilenceDetector(); start = performance.now();

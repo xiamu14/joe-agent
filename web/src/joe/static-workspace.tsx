@@ -17,8 +17,8 @@ const noCards: readonly WidgetCard[] = [];
 
 export function StaticWorkspace() {
   const { view, setView, modes, toggle } = useCanvasModes();
-  const first = useJoe({ sessionKey: 'joe.canvas.example.session', initialCards });
-  const second = useJoe({ sessionKey: 'joe.canvas.empty.session', initialCards: noCards });
+  const first = useJoe({ workspaceSlot: 0, sessionKey: 'joe.canvas.example.session', initialCards });
+  const second = useJoe({ workspaceSlot: 1, sessionKey: 'joe.canvas.empty.session', initialCards: noCards });
   const joe = [first, second][view];
   const hasCards = visibleWidgetCards(joe.widgetVisibility).length > 0;
   const [speech, setSpeech] = useState([false, false]);
@@ -47,7 +47,7 @@ export function StaticWorkspace() {
           <motion.aside initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center gap-8 py-4 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:self-stretch lg:overflow-y-auto lg:pb-0 lg:pt-20" aria-label="空间信息">
             <motion.div className="rounded-[24px] bg-[#151515] px-3 py-6 lg:shrink-0">
               <motion.p className="mb-3 pl-2 pr-4 text-xs text-white/35">我的空间</motion.p>
-              <BounceSidebar items={['空间1', '空间2']} value={view} onChange={setView} dotColor="#FC4C01" className="gap-1 text-white [&_[data-slot=bounce-sidebar-item]]:py-2 [&_[data-active=false]]:text-white/40 [&_[data-active=true]]:text-white" />
+              <BounceSidebar items={[first.canvas?.name ?? '空间1', second.canvas?.name ?? '空间2']} value={view} onChange={setView} dotColor="#FC4C01" className="gap-1 text-white [&_[data-slot=bounce-sidebar-item]]:py-2 [&_[data-active=false]]:text-white/40 [&_[data-active=true]]:text-white" />
             </motion.div>
 
           </motion.aside>
@@ -58,7 +58,7 @@ export function StaticWorkspace() {
                   <Shdr01 size={280} state={orbState} className="max-h-full max-w-full" ariaLabel={`SHDR-01 光球 · ${orbState}`} />
                 </motion.div>} /> }
             </motion.div>
-            <WorkspaceInput layoutMode={modes[view]} onToggleLayout={() => toggle(view)} onSettings={joe.openSettingsWidget} key={`${view}-${joe.sessionId}`} text={drafts[view]} onTextChange={setDraft} onSend={joe.send} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} />
+            <WorkspaceInput layoutMode={modes[view]} onToggleLayout={() => toggle(view)} onSettings={joe.openSettingsWidget} key={`${view}-${joe.sessionId}`} text={drafts[view]} onTextChange={setDraft} onSend={joe.send} onError={joe.setError} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} />
           </motion.section>
           <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} orbState={hasCards ? orbState : undefined} />
         </motion.div>

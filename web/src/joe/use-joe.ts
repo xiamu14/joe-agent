@@ -1,3 +1,4 @@
+import { publishCanvasChange, subscribeCanvasChanges } from './canvas-updates';
 import { isVideoPlaybackRequest, type VideoPlaybackRequest } from '../../../shared/video-playback';
 import { startBehaviorDelivery } from './behavior/delivery';
 import { nanoid } from 'nanoid';
@@ -25,7 +26,7 @@ import type {
 
 const noInitialCards: readonly WidgetCard[] = [];
 
-export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCards, voiceOutput = true, isolatedStream = false }: { sessionKey?: string; initialCards?: readonly WidgetCard[]; voiceOutput?: boolean; isolatedStream?: boolean } = {}) {
+export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCards, voiceOutput = true, isolatedStream = false, workspaceSlot }: { workspaceSlot?: number; sessionKey?: string; initialCards?: readonly WidgetCard[]; voiceOutput?: boolean; isolatedStream?: boolean } = {}) {
   const textStream = useRef(new TextStream()).current;
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null),
     [messages, setMessages] = useState<Message[]>([]);
@@ -53,6 +54,13 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   const turnVoice = useRef(false);
   const [voicePending, setVoicePending] = useState(false);
   const [widgetCursor, setWidgetCursor] = useState(0);
+  const [canvas, setCanvas] = useState<{ id: string; name: string; revision: number }>();
+  const canvasRef = useRef<string | undefined>(undefined);
+  useEffect(() => subscribeCanvasChanges(event => {
+    if (event.canvasId !== canvasRef.current) return;
+    setCanvas(current => !current || event.canvas.revision > current.revision ? event.canvas : current);
+    setWidgetVisibility(current => event.instances.reduce<WidgetVisibility>(applyWidgetSnapshot, current));
+  }), []);
   useEffect(() => { startBehaviorDelivery(); }, []);
   const receivedPlayback = useRef<string | undefined>(undefined);
   const [videoPlayback, setVideoPlayback] = useState<VideoPlaybackRequest>();
@@ -80,13 +88,16 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     try {
       const config = await api<Bootstrap>('/bootstrap', { signal });
       const id = canvasSessionId(localStorage, sessionKey, () => nanoid());
-      const session = await api<{ id: string; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', {
-        ...jsonBody({ id, initialCards }),
+      const workspaceId = workspaceSlot === undefined ? undefined : canvasSessionId(localStorage, 'joe.workspace', () => nanoid());
+      const session = await api<{ id: string; canvas?: { id: string; name: string; revision: number }; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', {
+        ...jsonBody({ id, initialCards, workspaceId, slot: workspaceSlot }),
         signal,
       });
       if (signal?.aborted || !mounted.current) return;
       localStorage.setItem(sessionKey, session.id);
       setWidgetCursor(session.widgetCursor ?? 0);
+      setCanvas(session.canvas);
+      canvasRef.current = session.canvas?.id;
       setVideoPlayback(undefined);
       setSessionId(session.id);
       setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
@@ -103,13 +114,14 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setState('offline');
       setError(e instanceof Error ? e.message : '无法连接 Joe 服务');
     }
-  }, [sessionKey, initialCards, refreshUsage]);
+  }, [sessionKey, initialCards, refreshUsage, workspaceSlot]);
   useEffect(() => {
     if (!sessionId) return;
     const source = new EventSource(`/joe-api/widget-events?sessionId=${encodeURIComponent(sessionId)}&cursor=${widgetCursor}`);
     const onWidget = (raw: Event) => {
       try {
         const event = JSON.parse((raw as MessageEvent).data);
+        publishCanvasChange(event);
         if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot') displayGate.receive(event);
       } catch { /* Ignore malformed events and retain the last valid snapshot. */ }
     };
@@ -236,6 +248,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
+      publishCanvasChange(event);
       if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot' || event.type === 'card.open' || event.type === 'video.play') displayGate.receive(event);
       if (event.type === 'messages' && event.user && event.assistant) {
         assistantId = event.assistant.id;
@@ -420,9 +433,11 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     uploadAbort.current?.abort();
     setUploading(false);
     try {
-      const session = await api<{ id: string; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', jsonBody({}));
+      const session = await api<{ id: string; canvas?: { id: string; name: string; revision: number }; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', jsonBody({ canvasId: canvasRef.current }));
       localStorage.setItem(sessionKey, session.id);
       setWidgetCursor(session.widgetCursor ?? 0);
+      setCanvas(session.canvas);
+      canvasRef.current = session.canvas?.id;
       setWidgetVisibility((session.widgets ?? []).reduce<WidgetVisibility>(applyWidgetSnapshot, {}));
       setWidgetResources((session.widgetResources ?? []).reduce<WidgetResources>(applyResourceSnapshot, {}));
       setVideoPlayback(undefined);
@@ -438,6 +453,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   }
   return {
     bootstrap,
+    canvas,
     textStream,
     greetingToPlay,
     acknowledgeGreeting: () => setGreetingToPlay(''),

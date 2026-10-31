@@ -1,3 +1,5 @@
+import { editCanvas } from './canvas-tool';
+import { canvasStore } from './widget-runtime';
 import { videoPlayOutputSchema } from './video-play-tool';
 import { desktopExecutor } from './desktop';
 import { nanoid } from 'nanoid';
@@ -117,6 +119,12 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         emit('state', { state: 'thinking' });
         const requestContext = new RequestContext();
         requestContext.set('model', model.id);
+        if (!input.desktop) requestContext.set('canvas.edit', (edit: Parameters<typeof editCanvas>[1]) => {
+          signal.throwIfAborted();
+          const change = editCanvas(widgetStore.canvasForSession(input.sessionId), edit, canvasStore, widgetStore);
+          if (change.type === 'canvas.changed') emit('canvas.changed', change);
+          return change;
+        });
         if (input.clientIp) requestContext.set('client.ip', input.clientIp);
         if (!input.desktop) requestContext.set('canvas.enabled', true);
         if (!input.desktop) requestContext.set('widget.present', (card: 'costs' | 'settings' | 'weather' | 'video', visible: boolean) => {

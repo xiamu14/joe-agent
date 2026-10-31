@@ -33,6 +33,13 @@ test('Mastra streams through the configured adapter and persists expression and 
     calls++;
     const request = JSON.parse(String(init?.body));
     requests.push(request);
+    for (const tool of request.tools) {
+      assert.equal(tool.function.parameters.type, 'object', `${tool.function.name} must have object parameters`);
+    }
+    const canvasParameters = request.tools.find((tool: any) => tool.function.name === 'editCanvas').function.parameters;
+    assert.ok(canvasParameters.properties.mode);
+    assert.ok(canvasParameters.properties.changes);
+
     assert.equal(request.model, calls === 1 ? 'openai/test' : 'anthropic/test');
     const base = {
       id: `gen-test-${calls}`,
@@ -373,6 +380,30 @@ test('widget tool result opens a card before the final answer', async () => {
     assert.equal(hiddenInstance.visible, false);
     assert.equal(hiddenInstance.instanceId, shownInstance.instanceId);
     assert.equal(hidden.some(e => e.type === 'card.open'), false);
+  } finally { globalThis.fetch = original; }
+});
+
+test('canvas edit publishes the saved name before the final answer without waiting for SSE', async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    const frame = (delta: unknown, reason: string | null) =>
+      `data: ${JSON.stringify({ id: 'canvas-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
+    const body = calls === 1
+      ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: 'canvas-call', type: 'function', function: { name: 'editCanvas', arguments: JSON.stringify({ mode: 'apply', changes: [{ type: 'canvas.rename', name: '娱乐间' }] }) } }] }, null) + frame({}, 'tool_calls')
+      : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"已改名。"}') + frame({}, 'stop');
+    return new Response(body + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    const sessionId = store.session(), turnId = nanoid();
+    const events: any[] = [];
+    await readEvents(await chat({ sessionId, turnId, text: '改名娱乐间', model: 'openai/test' }, new AbortController().signal), event => events.push(event));
+    const change = events.find(event => event.type === 'canvas.changed');
+    assert.equal(change?.canvas.name, '娱乐间');
+    assert.equal(change.canvasId, widgetStore.canvasForSession(sessionId));
+    assert.ok(events.indexOf(change) < events.findIndex(event => event.type === 'text.delta'));
+    assert.equal(events.at(-1).message.status, 'complete');
   } finally { globalThis.fetch = original; }
 });
 

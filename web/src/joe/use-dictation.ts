@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { dictationError } from './voice-input/errors';
 import { startDictation } from './voice-input/dictation-capture';
 import { startRealtimeDictation } from './voice-input/realtime-dictation';
 import { api, jsonBody } from './api';
 import { browserSpeechAvailable, startBrowserSpeech } from './voice-input/browser-speech';
 
-export function useDictation(sessionId: string, onText: (text: string) => void) {
+export function useDictation(sessionId: string, onText: (text: string) => void, onError: (message: string) => void) {
   const [state, setState] = useState<'idle' | 'connecting' | 'recording' | 'transcribing'>('idle');
   const [inputStream, setInputStream] = useState<MediaStream | null>(null);
-  const [error, setError] = useState('');
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const setError = (message: string) => onErrorRef.current(message);
   const [preview, setPreview] = useState('');
   const [browserSupported, setBrowserSupported] = useState(false);
   const current = useRef(0);
@@ -40,7 +43,7 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
           preview: value => { if (token === current.current) setPreview(value); },
           stopped: () => { if (token === current.current) setState('transcribing'); },
           finished: () => { if (token === current.current) setState('idle'); },
-          failed: () => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError('语音识别失败，请检查浏览器权限'); } },
+          failed: error => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError(dictationError(error)); } },
         });
         setState('recording');
         return;
@@ -56,9 +59,9 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
       if (token !== current.current) { release(); return; }
       const callbacks = {
         text: (value: string) => { if (token === current.current) onTextRef.current(value); },
-        error: () => { if (token === current.current) setError('识别失败，请重试'); },
+        error: (error: unknown) => { if (token === current.current) setError(dictationError(error)); },
         stopped: () => { release(); if (token === current.current) setState('transcribing'); },
-        failed: () => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError('录音失败，请重试'); } },
+        failed: (error?: unknown) => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError(dictationError(error, '录音失败，请重试')); } },
         finished: () => { release(); if (token === current.current) setState('idle'); },
         preview: (value: string) => { if (token === current.current) setPreview(value); },
       };
@@ -67,11 +70,11 @@ export function useDictation(sessionId: string, onText: (text: string) => void) 
         : startDictation(stream, context, sessionId, callbacks);
       if (token !== current.current) { capture.cancel(); release(); return; }
       setState('recording');
-    } catch {
+    } catch (error) {
       release();
-      if (token === current.current) { setState('idle'); setError('无法录音，请检查麦克风权限'); }
+      if (token === current.current) { setState('idle'); setError(dictationError(error, '无法录音，请重试')); }
     }
   }
   const cancel = () => { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); };
-  return { state, inputStream, error, preview, setPreview, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
+  return { state, inputStream, preview, setPreview, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
 }
