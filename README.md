@@ -16,7 +16,7 @@ cp backend/.env.example backend/.env
 在 `backend/.env` 填写：
 
 - `OPENROUTER_API_TOKEN`：OpenRouter 凭据。
-- `backend/src/config/models.ts`：模型列表的唯一配置来源。`type: Think` 用于对话与设置选择，`type: Decision` 留给决策调用；旧 `JOE_MODELS_JSON` 环境变量不再读取。可选费率单位为 USD / 百万 Token。
+- `backend/src/config/models.ts`：模型列表的唯一配置来源。`type: Think` 用于对话与设置选择，`type: Decision` 留给决策调用，`type: OCR` 用于图片识别（当前为 GPT-5 Nano）；旧 `JOE_MODELS_JSON` 环境变量不再读取。可选费率单位为 USD / 百万 Token。
 - `FISH_API_TOKEN`、`FISH_REFERENCE_ID`：Fish 凭据及音色 ID；ASR / TTS 模型通过环境变量设置。
 - 语音及天气服务配置见 `.env.example`。凭据只在 backend，不能放进 `VITE_*` 环境变量。
 

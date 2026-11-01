@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JOE_MODELS_JSON } from '../src/config/models';
-import { loadModels, models, decisionModels, modelById } from '../src/joe/config';
+import { loadModels, models, decisionModels, ocrModels, modelById } from '../src/joe/config';
 
 test('source configuration separates decision models from chat and settings', () => {
   assert.equal(loadModels().length, JOE_MODELS_JSON.length);
@@ -22,4 +22,11 @@ test('legacy environment cannot override the source model list', () => {
     if (previous === undefined) delete process.env.JOE_MODELS_JSON;
     else process.env.JOE_MODELS_JSON = previous;
   }
+});
+
+test('OCR uses GPT-5 Nano without exposing it as a chat model', () => {
+  assert.equal(ocrModels.length, 1);
+  assert.equal(ocrModels[0].id, 'openai/gpt-5-nano');
+  assert.equal(ocrModels[0].type, 'OCR');
+  assert.throws(() => modelById(ocrModels[0].id));
 });
