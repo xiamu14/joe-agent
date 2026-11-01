@@ -9,7 +9,8 @@ import type { MastraDBMessage } from '@mastra/core/memory';
 import { chatSchema, fallbackExpression, answerSchema, expressionSchema } from './schema';
 import { store, type Message } from './store';
 import { widgetStore } from './widget-runtime';
-import { modelById, configured } from './config';
+import { modelById, configured, ocrModels } from './config';
+import { tally } from './tally';
 import { joeAgent, sourceSchema } from './agent';
 import { resourceId, joeMemory } from './memory';
 import { ensureConversation, threadId, memoryMessage, persistTurn, inFlight } from './conversations';
@@ -46,8 +47,9 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
     id: nanoid(),
     role: 'user',
     text: input.text,
+    ...(input.command ? { command: input.command } : {}),
     status: 'complete',
-    attachments: attachments.map(({ id, name }) => ({ id, name })),
+    attachments: attachments.map(({ id, name, image }) => ({ id, name, ...(image ? { mime: image.mime } : {}) })),
   };
   const answer: Message = {
     ...common,
@@ -70,7 +72,8 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
     throw error;
   }
   inFlight.set(input.turnId, answer);
-  store.usage(input.turnId, 'llm', model.id, null, null, null, 'pending');
+  const usageModel = input.command === 'tally' ? ocrModels[0]?.id ?? model.id : model.id;
+  store.usage(input.turnId, 'llm', usageModel, null, null, null, 'pending');
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const emit = (type: string, data: Record<string, unknown> = {}) => {
@@ -117,6 +120,12 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
       try {
         emit('messages', { user, assistant: answer });
         emit('state', { state: 'thinking' });
+        if (input.command === 'tally') {
+          clearTimeout(slow);
+          update({ text: await tally(user, signal, emit) });
+          answer.status = 'complete';
+          return;
+        }
         const requestContext = new RequestContext();
         requestContext.set('model', model.id);
         if (!input.desktop) requestContext.set('canvas.edit', (edit: Parameters<typeof editCanvas>[1]) => {
@@ -127,7 +136,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         });
         if (input.clientIp) requestContext.set('client.ip', input.clientIp);
         if (!input.desktop) requestContext.set('canvas.enabled', true);
-        if (!input.desktop) requestContext.set('widget.present', (card: 'costs' | 'settings' | 'weather' | 'video', visible: boolean) => {
+        if (!input.desktop) requestContext.set('widget.present', (card: 'costs' | 'settings' | 'weather' | 'video' | 'finance', visible: boolean) => {
           signal.throwIfAborted();
           return widgetStore.presentBuiltin(widgetStore.canvasForSession(input.sessionId), card, visible);
         });
@@ -184,7 +193,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
             if (chunk.type === 'tool-result') {
               emit('state', { state: 'thinking' });
               if (chunk.payload.toolName === 'presentWidget') {
-                const result = z.object({ ok: z.literal(true), card: z.enum(['costs', 'settings', 'weather', 'video']), instance: z.object({ instanceId: z.string(), widgetType: z.string(), visible: z.boolean(), revision: z.number() }).passthrough() }).safeParse(chunk.payload.result);
+                const result = z.object({ ok: z.literal(true), card: z.enum(['costs', 'settings', 'weather', 'video', 'finance']), instance: z.object({ instanceId: z.string(), widgetType: z.string(), visible: z.boolean(), revision: z.number() }).passthrough() }).safeParse(chunk.payload.result);
                 if (result.success) {
                   emit('widget.snapshot', { instance: result.data.instance });
                   if (result.data.instance.visible && (result.data.card === 'costs' || result.data.card === 'settings')) emit('card.open', { card: result.data.card });
@@ -273,8 +282,11 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
             });
           answer.status = signal.aborted ? 'interrupted' : 'error';
           emit('state', { state: signal.aborted ? 'interrupted' : 'error' });
-          if (!signal.aborted) emit('error', { message: '回答暂时不可用，请重试。' });
-          store.usage(input.turnId, 'llm', model.id, null, null, null, answer.status);
+          if (!signal.aborted) {
+            answer.error = input.command === 'tally' ? '记账失败了，让我重新试试' : '回答暂时不可用，请重试。';
+            emit('error', { message: answer.error });
+          }
+          store.usage(input.turnId, 'llm', usageModel, null, null, null, answer.status);
         }
       } finally {
         clearTimeout(slow);

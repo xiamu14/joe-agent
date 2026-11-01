@@ -12,7 +12,7 @@ export function promptText(message: Pick<Message, 'sessionId' | 'text' | 'attach
     message.attachments
       .map((a) => {
         const file = store.attachment(message.sessionId, a.id);
-        return `\n<untrusted-attachment name=${JSON.stringify(file.name)}>\n${file.text}\n</untrusted-attachment>`;
+        return `\n<untrusted-attachment name=${JSON.stringify(file.name)}>\n${file.image ? '图片附件；使用 /tally 识别账户余额。' : file.text}\n</untrusted-attachment>`;
       })
       .join('')
   );

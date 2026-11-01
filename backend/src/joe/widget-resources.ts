@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { financeSnapshotSchema } from './finance-schema';
 
 export const weatherSchema = z.object({
   configured: z.literal(true), place: z.string(), temperature: z.number(),
@@ -10,6 +11,7 @@ export const weatherSchema = z.object({
 }).passthrough();
 const video = z.object({ duration: z.number().nonnegative().optional(), publishedAt: z.string().optional(), views: z.number().nonnegative().optional(), id: z.string().regex(/^[\w-]{11}$/), title: z.string().min(1).max(300), channel: z.string().max(300), thumbnail: z.string().url().refine(value => new URL(value).hostname === 'i.ytimg.com') });
 export const resourceSchemas = {
+  'finance.accounts@1': financeSnapshotSchema,
   'weather@1': weatherSchema,
   'youtube.search@1': z.object({ query: z.string().min(1).max(200), videos: z.array(video).max(20) }),
 } as const;

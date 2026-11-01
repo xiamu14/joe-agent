@@ -1,5 +1,6 @@
 import type { ProviderBilling } from '../../../shared/provider-billing';
 import type { VideoPlaybackRequest } from '../../../shared/video-playback';
+import type { ShortcutId } from '../../../shared/shortcuts';
 export type Emotion = 'calm' | 'curious' | 'joy' | 'empathy' | 'encouraging' | 'serious' | 'concerned';
 export type AgentState =
   | 'idle'
@@ -14,19 +15,21 @@ export type AgentState =
   | 'error'
   | 'offline';
 export type Expression = { emotion: Emotion; intensity: number };
-export type Attachment = { id: string; name: string };
+export type Attachment = { id: string; name: string; mime?: string };
 export type Message = {
   id: string;
   sessionId: string;
   turnId: string;
   role: 'user' | 'assistant';
   text: string;
+  command?: ShortcutId;
   kind?: 'greeting';
   audioUrl?: string;
   visibleText?: string;
   speechText?: string;
   speechLanguage?: 'en' | 'zh';
   status: string;
+  error?: string;
   model: string;
   expression: Expression;
   attachments: Attachment[];
@@ -96,7 +99,7 @@ export type AgentEvent = {
   user?: Message;
   assistant?: Message;
   sources?: { title: string; url: string }[];
-  card?: 'costs' | 'settings' | 'weather' | 'video';
+  card?: 'costs' | 'settings' | 'weather' | 'video' | 'finance';
   instance?: unknown;
   resource?: unknown;
   playback?: VideoPlaybackRequest;

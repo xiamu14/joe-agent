@@ -35,7 +35,7 @@ export function WorkspaceTools({ onSettings, ready, className, layoutMode, onTog
     finally { setPending(false); }
   }
   return <>
-    <MotionButton ref={trigger} type="button" aria-label="工具" aria-haspopup="dialog" aria-expanded={open} onClick={() => { setError(''); setOpen(true); }} className={className} whileTap={{ scale: 0.95 }}><Settings size={14} strokeWidth={1.75} /></MotionButton>
+    <MotionButton ref={trigger} type="button" aria-label="工具" aria-haspopup="dialog" aria-expanded={open} onClick={() => { setError(''); setOpen(true); }} className={className} whileTap={{ scale: 0.95 }}><Settings size={16} strokeWidth={1.75} /></MotionButton>
     <AnimatePresence>
       {open && <Dialog static open={open} onClose={() => setOpen(false)} className="relative z-[200]">
         <DialogPanel as={motion.div} initial={{ opacity: 0, y: reduced ? 0 : 8, scale: reduced ? 1 : 0.96 }} animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: reduced ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] } }} exit={{ opacity: 0, y: reduced ? 0 : 6, scale: reduced ? 1 : 0.96, transition: { duration: reduced ? 0 : 0.15 } }} style={position} className="fixed w-[134px] max-w-[calc(100vw-24px)] origin-bottom-left rounded-[20px] bg-[#252525] p-2 shadow-[0_12px_40px_rgba(0,0,0,0.3)]">

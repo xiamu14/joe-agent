@@ -1,4 +1,6 @@
+import { useAttachments } from './composer/use-attachments';
 import { publishCanvasChange, subscribeCanvasChanges } from './canvas-updates';
+import type { ShortcutId } from '../../../shared/shortcuts';
 import { isVideoPlaybackRequest, type VideoPlaybackRequest } from '../../../shared/video-playback';
 import { startBehaviorDelivery } from './behavior/delivery';
 import { nanoid } from 'nanoid';
@@ -19,7 +21,6 @@ import type {
   Settings,
   AgentState,
   Expression,
-  Attachment,
   AgentEvent,
   Usage,
 } from './types';
@@ -41,9 +42,8 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
   const [playing, setPlaying] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]),
-    [uploading, setUploading] = useState(false),
-    [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { attachments, setAttachments, uploading, upload, removeAttachment, cancelUpload } = useAttachments(sessionId, busy, setError);
   const turn = useRef(''),
     abort = useRef<AbortController | null>(null),
     voice = useRef<VoiceQueue | null>(null),
@@ -76,8 +76,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     if (event.type === 'resource.snapshot') setWidgetResources(current => applyResourceSnapshot(current, event.resource));
     if (event.type === 'card.open' && (event.card === 'costs' || event.card === 'settings' || event.card === 'weather' || event.card === 'video') && event.turnId) setCardRequest({ card: event.card, turnId: event.turnId });
   })).current;
-  const uploadAbort = useRef<AbortController | null>(null),
-    generation = useRef(0);
+  const generation = useRef(0);
   const refreshUsage = useCallback(async () => {
     try {
       const usage = await api<Usage>('/usage');
@@ -164,7 +163,6 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       controller.abort();
       abort.current?.abort();
       speechAbort.current?.abort();
-      uploadAbort.current?.abort();
       voice.current?.dispose();
       clearInterval(poll);
       textStream.clear();
@@ -219,7 +217,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       setSaving(false);
     }
   }, [saving, displayGate]);
-  async function send(text: string, spoken = false, validate?: () => Promise<boolean>) {
+  async function send(text: string, spoken = false, validate?: () => Promise<boolean>, command?: ShortcutId) {
     if (uploading || !sessionId || (!text.trim() && !attachments.length)) return false;
     const model = settingsRef.current?.model || bootstrap?.models[0]?.id;
     if (!bootstrap?.configured.llm || !model) {
@@ -241,7 +239,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     const language = settingsRef.current?.voiceLanguage || 'auto';
     const signal = abort.current.signal;
     const optimisticId = `pending-${id}`;
-    setMessages(old => [...old, { id: optimisticId, sessionId, turnId: id, role: 'user', text, status: 'pending', model, expression: { emotion: 'calm', intensity: 0.35 }, attachments, createdAt: Date.now() }]);
+    setMessages(old => [...old, { id: optimisticId, sessionId, turnId: id, role: 'user', text, command, status: 'pending', model, expression: { emotion: 'calm', intensity: 0.35 }, attachments, createdAt: Date.now() }]);
     let completed = false;
     let assistantId = '',
       failed = false,
@@ -309,6 +307,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
           sessionId,
           turnId: id,
           text,
+          command,
           model,
           attachmentIds: attachments.map((a) => a.id),
           clientIp,
@@ -375,40 +374,6 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       }
     }
   }
-  async function upload(file: File) {
-    if (!sessionId || attachments.length >= 5 || uploading || busy) return;
-    if (!/\.(txt|md)$/i.test(file.name) || file.size > 1024 * 1024) {
-      setError('仅支持 1MB 以内的 .md / .txt 文件');
-      return;
-    }
-    setUploading(true);
-    setError('');
-    const current = generation.current;
-    uploadAbort.current = new AbortController();
-    try {
-      const form = new FormData();
-      form.set('sessionId', sessionId);
-      form.set('file', file);
-      const attachment = await api<Attachment>('/attachments', {
-        method: 'POST',
-        body: form,
-        signal: uploadAbort.current.signal,
-      });
-      if (current === generation.current) setAttachments((old) => [...old, attachment]);
-    } catch (e) {
-      if (current === generation.current) setError(e instanceof Error ? e.message : '上传失败');
-    } finally {
-      if (current === generation.current) setUploading(false);
-    }
-  }
-  async function removeAttachment(id: string) {
-    try {
-      await api('/attachments', jsonBody({ id, sessionId }, 'DELETE'));
-      setAttachments((old) => old.filter((a) => a.id !== id));
-    } catch (e) {
-      setError(String(e));
-    }
-  }
   async function openSettingsWidget() {
     const current = generation.current;
     const result = await api<{ instance: unknown }>('/widget-visibility', jsonBody({ sessionId, card: 'settings', visible: true }));
@@ -430,8 +395,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     stop();
     textStream.clear();
     generation.current++;
-    uploadAbort.current?.abort();
-    setUploading(false);
+    cancelUpload();
     try {
       const session = await api<{ id: string; canvas?: { id: string; name: string; revision: number }; created?: boolean; messages: Message[]; widgetCursor?: number; widgets?: unknown[]; widgetResources?: unknown[] }>('/session', jsonBody({ canvasId: canvasRef.current }));
       localStorage.setItem(sessionKey, session.id);

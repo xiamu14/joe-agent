@@ -15,6 +15,7 @@ import {
   type Transition,
 } from "motion/react";
 import { cn } from "./classes";
+import { Button } from '@base-ui/react/button';
 
 const SEND: Transition = { type: "spring", visualDuration: 0.42, bounce: 0.28 };
 const SHIFT: Transition = { type: "spring", visualDuration: 0.4, bounce: 0.1 };
@@ -32,6 +33,7 @@ const KEY_STEPS: Record<string, (index: number, last: number) => number> = {
 export type FaqItem = {
   id: string;
   question: string;
+  questionContent?: ReactNode;
   answer: ReactNode;
   beforeAnswer?: ReactNode;
 };
@@ -64,13 +66,14 @@ function Question({
   reduced,
   onToggle,
 }: BubbleProps & { onToggle: () => void }) {
+  const Bubble = item.questionContent ? motion.div : motion.button;
   return (
-    <motion.button
+    <Bubble
       id={ids.question}
-      type="button"
+      type={item.questionContent ? undefined : 'button'}
       data-slot="faq-question"
-      aria-expanded={open}
-      aria-controls={open ? ids.answer : undefined}
+      aria-expanded={item.questionContent ? undefined : open}
+      aria-controls={!item.questionContent && open ? ids.answer : undefined}
       onClick={onToggle}
       // every bubble re-measures when any answer opens, so the ones below slide
       layout="position"
@@ -84,8 +87,10 @@ function Question({
           : "bg-[#F4F4F9] dark:bg-[#262626]",
       )}
     >
-      {item.question}
-    </motion.button>
+      {item.questionContent && <Button type="button" aria-label="展开或收起回答" aria-expanded={open} aria-controls={open ? ids.answer : undefined}
+        onClick={event => { event.stopPropagation(); onToggle(); }} className="sr-only focus:not-sr-only focus:mb-2 focus:block focus:rounded-lg focus:bg-white/10 focus:p-2">{open ? '收起回答' : '展开回答'}</Button>}
+      {item.questionContent ?? item.question}
+    </Bubble>
   );
 }
 

@@ -20,6 +20,7 @@ import { currentWeather } from './weather';
 import { conversationMessages } from './conversations';
 import { mastraStorage } from './memory';
 import { supportedTranscript } from './input-language';
+import { attachFile, imageLimit } from './attachments';
 
 const allowedOrigins = new Set(
   (process.env.JOE_WEB_ORIGINS || 'http://127.0.0.1:5173,http://localhost:5173').split(','),
@@ -111,7 +112,7 @@ export const routes = [
     return c.json(store.saveSettings(value));
   }),
   route('/session', 'POST', async (c) => {
-    const body = z.object({ id: idSchema.optional(), workspaceId: idSchema.optional(), slot: z.number().int().min(0).max(1).optional(), canvasId: idSchema.optional(), initialCards: z.array(z.enum(['costs', 'settings', 'weather', 'video'])).max(4).default([]) }).parse(await json(c));
+    const body = z.object({ id: idSchema.optional(), workspaceId: idSchema.optional(), slot: z.number().int().min(0).max(1).optional(), canvasId: idSchema.optional(), initialCards: z.array(z.enum(['costs', 'settings', 'weather', 'video', 'finance'])).max(5).default([]) }).parse(await json(c));
     const id = store.session(body.id, true);
     let canvasId = widgetStore.canvasForSession(id);
     if (body.canvasId) {
@@ -125,7 +126,7 @@ export const routes = [
     return c.json({ id, canvasId, canvas: canvasStore.metadata(canvasId), widgets: widgets.instances, widgetResources: widgets.resources, widgetCursor: widgets.cursor, created: id !== body.id, messages: await conversationMessages(id) });
   }),
   route('/widget-visibility', 'POST', async (c) => {
-    const input = z.object({ sessionId: idSchema, card: z.enum(['costs', 'settings', 'weather', 'video']), visible: z.boolean() }).parse(await json(c));
+    const input = z.object({ sessionId: idSchema, card: z.enum(['costs', 'settings', 'weather', 'video', 'finance']), visible: z.boolean() }).parse(await json(c));
     store.requireSession(input.sessionId);
     return c.json({ instance: widgetStore.presentBuiltin(widgetStore.canvasForSession(input.sessionId), input.card, input.visible) });
   }),
@@ -174,20 +175,21 @@ export const routes = [
     return c.json({ text: await supportedTranscript(input.text, c.req.raw.signal) });
   }),
   route('/attachments', 'POST', async (c) => {
-    const data = await form(c, 1024 * 1024 + 8192);
+    const data = await form(c, imageLimit + 8192);
     const session = idSchema.parse(data.get('sessionId'));
     const file = data.get('file');
-    if (!(file instanceof File) || !file.size || file.size > 1024 * 1024 || !/\.(md|txt)$/i.test(file.name))
-      throw new Error('只支持 1MB 以内的 .md / .txt 文件');
-    const bytes = await file.arrayBuffer();
-    let text: string;
-    try {
-      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    } catch {
-      throw new Error('请上传 UTF-8 文本文件');
-    }
-    if (text.includes('\0') || text.length > 60000) throw new Error('文件包含二进制内容或超过 60,000 字符');
-    return c.json(store.attach(session, file.name.slice(0, 180), text));
+    if (!(file instanceof File)) throw new Error('请选择附件');
+    return c.json(await attachFile(store, session, file));
+  }),
+  route('/attachments/content', 'GET', c => {
+    const session = idSchema.parse(c.req.query('sessionId'));
+    const id = idSchema.parse(c.req.query('id'));
+    const image = store.image(session, id);
+    if (!image) throw new Error('图片不存在或不属于当前会话');
+    return new Response(new Uint8Array(image.bytes), { headers: {
+      'Content-Type': image.mime, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'", 'Content-Disposition': 'inline',
+    } });
   }),
   route('/attachments', 'DELETE', async (c) => {
     const value = z.object({ sessionId: idSchema, id: idSchema }).parse(await json(c));

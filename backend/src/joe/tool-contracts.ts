@@ -4,7 +4,7 @@ import { resourceSchemas } from './widget-resources';
 
 export const widgetInstanceSchema = z.object({
   instanceId: idSchema,
-  widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video']),
+  widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video', 'builtin.finance']),
   visible: z.boolean(),
   revision: z.number().int().nonnegative(),
 }).passthrough();

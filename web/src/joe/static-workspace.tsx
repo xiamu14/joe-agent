@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState, type SetStateAction } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSONContent } from '@tiptap/react';
+import { emptyDraft } from './composer/draft';
 import { MotionConfig, motion } from 'motion/react';
 import { BounceSidebar } from '../components/rare-ui/bounce-sidebar';
 import { WorkspaceChat } from './workspace-chat';
@@ -26,8 +28,8 @@ export function StaticWorkspace() {
     setSpeech(previous => previous.map((value, index) => index === view ? playing : value));
   }, [view]);
   const orbState = workspaceOrbState(joe.state, joe.busy, speech[view] || joe.playing);
-  const [drafts, setDrafts] = useState(['', '']);
-  const setDraft = (text: SetStateAction<string>) => setDrafts(previous => previous.map((draft, index) => index === view ? typeof text === 'function' ? text(draft) : text : draft));
+  const [drafts, setDrafts] = useState<JSONContent[]>([emptyDraft(), emptyDraft()]);
+  const setDraft = (value: JSONContent) => setDrafts(previous => previous.map((draft, index) => index === view ? value : draft));
   const [snapshot, setSnapshot] = useState<CanvasSnapshot | null>(null);
   const rememberCanvas = useCallback((value: CanvasSnapshot) => { setSnapshot(value); saveCanvas(value); }, []);
   useEffect(() => { const value = loadCanvas(createCanvasLayout(crypto.getRandomValues(new Uint32Array(1))[0])); setSnapshot(value); saveCanvas(value); }, []);
@@ -58,7 +60,7 @@ export function StaticWorkspace() {
                   <Shdr01 size={280} state={orbState} className="max-h-full max-w-full" ariaLabel={`SHDR-01 光球 · ${orbState}`} />
                 </motion.div>} /> }
             </motion.div>
-            <WorkspaceInput layoutMode={modes[view]} onToggleLayout={() => toggle(view)} onSettings={joe.openSettingsWidget} key={`${view}-${joe.sessionId}`} text={drafts[view]} onTextChange={setDraft} onSend={joe.send} onError={joe.setError} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} />
+            <WorkspaceInput layoutMode={modes[view]} onToggleLayout={() => toggle(view)} onSettings={joe.openSettingsWidget} key={`${view}-${joe.sessionId}`} draft={drafts[view]} onDraftChange={setDraft} onSend={joe.send} onError={joe.setError} ready={Boolean(joe.sessionId)} busy={joe.busy} sessionId={joe.sessionId} voiceReady={Boolean(joe.sessionId && joe.bootstrap?.configured.asr && joe.bootstrap.configured.llm)} attachments={joe.attachments} uploading={joe.uploading} onUpload={joe.upload} onRemoveAttachment={joe.removeAttachment} />
           </motion.section>
           <WorkspaceChat key={view} joe={joe} onSpeakingChange={onSpeakingChange} orbState={hasCards ? orbState : undefined} />
         </motion.div>

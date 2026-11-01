@@ -2,11 +2,11 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { widgetInstanceSchema } from './tool-contracts';
 
-const inputSchema = z.object({ card: z.enum(['costs', 'settings', 'weather', 'video']), visible: z.boolean().default(true) });
+const inputSchema = z.object({ card: z.enum(['costs', 'settings', 'weather', 'video', 'finance']), visible: z.boolean().default(true) });
 
 export const presentWidget = createTool({
   id: 'present-widget',
-  description: '根据用户要求显示或隐藏费用、设置、天气或视频卡片。显示和隐藏不会改变卡片内容。',
+  description: '根据用户要求显示或隐藏费用、设置、天气、视频或账户卡片。显示和隐藏不会改变卡片内容。',
   inputSchema,
   outputSchema: z.discriminatedUnion('ok', [
     z.object({ ok: z.literal(true), card: inputSchema.shape.card, instance: widgetInstanceSchema }),

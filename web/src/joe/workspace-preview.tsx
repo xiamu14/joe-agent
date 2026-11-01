@@ -4,6 +4,8 @@ import { FreeCanvasLayout } from './layouts/free-canvas-layout';
 import { BentoCanvasLayout } from './layouts/bento-canvas-layout';
 import type { LayoutMode } from './layouts/canvas-layout-layer';
 import { WeatherCard } from './weather/weather-card';
+import { FinanceCard } from './finance/finance-card';
+import type { FinanceSnapshot } from '../../../shared/finance';
 import { YouTubeCard } from './video/youtube-card';
 import { CanvasSceneContext, useCanvasSceneState } from './canvas-scene';
 import { useCanvasPan } from './use-canvas-pan';
@@ -28,6 +30,8 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
   const weatherResource = weatherId ? joe.widgetResources[weatherId] : undefined;
   const videoId = joe.widgetVisibility.video?.bindings.data?.resourceId;
   const videoResource = videoId ? joe.widgetResources[videoId] : undefined;
+  const financeId = joe.widgetVisibility.finance?.bindings.data?.resourceId;
+  const financeResource = financeId ? joe.widgetResources[financeId] : undefined;
   const handledRequest = useRef<typeof joe.cardRequest>(null);
   useEffect(() => {
     const request = joe.cardRequest;
@@ -37,7 +41,7 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
   }, [joe.cardRequest, joe.widgetVisibility, scene.open]);
   const selected = scene.selection?.id;
   useEffect(() => {
-    if (selected && ['costs', 'settings', 'weather', 'video'].includes(selected) && !visible(selected as WidgetCard)) scene.dismiss(selected);
+    if (selected && ['costs', 'settings', 'weather', 'video', 'finance'].includes(selected) && !visible(selected as WidgetCard)) scene.dismiss(selected);
   }, [selected, joe.widgetVisibility, scene.dismiss]);
   useEffect(() => {
     if (!scene.selection?.expanded) return;
@@ -71,6 +75,7 @@ export function CanvasPreview({ layout, initialPan, onSave, joe, emptyContent, m
       <Layout canvas={scene.canvas} ids={cards} layout={layout} selected={selected} onPlacement={scene.setPlacement} />
       <AnimatePresence>{!cards.length && emptyContent}</AnimatePresence>
       <AnimatePresence initial={false}>
+      {visible('finance') && <FinanceCard key="finance" data={financeResource?.schema === 'finance.accounts@1' ? financeResource.data as FinanceSnapshot : undefined} />}
       {visible('video') && <YouTubeCard key="video" playback={joe.videoPlayback} onPlaybackHandled={joe.consumeVideoPlayback} context={joe.widgetVisibility.video?.canvasId && joe.widgetVisibility.video?.instanceId ? { sessionId: joe.sessionId, canvasId: joe.widgetVisibility.video.canvasId, instanceId: joe.widgetVisibility.video.instanceId } : undefined} results={videoResource?.schema === 'youtube.search@1' ? videoResource.data as import('./video/youtube-card').VideoResults : undefined} />}
       {visible('weather') && <WeatherCard key="weather" bound={Boolean(weatherId)} resource={weatherResource?.schema === 'weather@1' ? weatherResource.data as import('./types').Weather : undefined} />}
       </AnimatePresence>

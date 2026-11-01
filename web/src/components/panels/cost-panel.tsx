@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { memo } from 'react';
 import type { Usage } from '../../joe/types';
+import { CurrencyAmount } from './currency-amount';
 
 const dollars = new Intl.NumberFormat('en-US', {
   style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 4,
@@ -21,10 +22,7 @@ export const CostPanel = memo(function CostPanel({ usage, compact = false }: { u
         <motion.div key={key} className="min-w-0">
           <motion.dt className="text-xs text-white/60">{label}</motion.dt>
           <motion.dd className="mt-2 flex items-baseline gap-1 break-words text-xl font-semibold tabular-nums text-white">
-            {typeof billing?.total[key] === 'number' ? <>
-              <motion.span>$</motion.span>
-              <motion.span className="min-w-0 text-[1.5em]">{money(billing.total[key]).slice(1)}</motion.span>
-            </> : money(billing?.total[key])}
+            {typeof billing?.total[key] === 'number' ? <CurrencyAmount symbol="$">{money(billing.total[key]).slice(1)}</CurrencyAmount> : money(billing?.total[key])}
           </motion.dd>
         </motion.div>
       ))}

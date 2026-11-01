@@ -1,65 +1,79 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useState } from 'react';
+import { EditorContent, type JSONContent } from '@tiptap/react';
 import { motion } from 'motion/react';
-import { ArrowUp, Mic, Paperclip } from 'lucide-react';
+import { ArrowUp, Mic } from 'lucide-react';
 import { WorkspaceTools } from '../components/rare-ui/workspace-tools';
+import { ComposerAttachmentButton, ComposerButton, composerButtonClass } from '../components/rare-ui/composer-controls';
+import { AttachmentList } from '../components/rare-ui/attachment-list';
+import { ShortcutMenu } from '../components/rare-ui/shortcut-menu';
 import { VoiceWave } from './voice-wave';
 import { useVoiceLevel } from './use-voice-level';
 import { useDictation } from './use-dictation';
+import { useComposerEditor } from './composer/use-composer-editor';
+import { appendText, draftCommand } from './composer/draft';
 import { api, jsonBody } from './api';
 import { dictationError } from './voice-input/errors';
+import type { Attachment } from './types';
+import type { useJoe } from './use-joe';
 
-const iconButton = 'grid size-[30px] shrink-0 place-items-center rounded-full bg-[#333333] text-white';
-
-export function WorkspaceInput({ text, onTextChange, onSend, ready, busy, sessionId, voiceReady, onError, onSettings, layoutMode, onToggleLayout }: {
-  text: string;
-  onTextChange: Dispatch<SetStateAction<string>>;
-  onSend: (text: string, spoken?: boolean, validate?: () => Promise<boolean>) => Promise<boolean>;
-  ready: boolean;
-  busy: boolean;
-  sessionId: string;
-  voiceReady: boolean;
-  onError(message: string): void;
-  onSettings(): Promise<boolean>;
+export function WorkspaceInput({ draft, onDraftChange, onSend, ready, busy, sessionId, voiceReady, onError, onSettings, layoutMode, onToggleLayout, attachments, uploading, onUpload, onRemoveAttachment }: {
+  draft: JSONContent; onDraftChange(value: JSONContent): void;
+  onSend: ReturnType<typeof useJoe>['send'];
+  ready: boolean; busy: boolean; sessionId: string; voiceReady: boolean;
+  onError(message: string): void; onSettings(): Promise<boolean>;
   layoutMode: 'free' | 'bento'; onToggleLayout(): void;
+  attachments: Attachment[]; uploading: boolean; onUpload(file: File): Promise<void>; onRemoveAttachment(id: string): Promise<void>;
 }) {
-  const voice = useDictation(sessionId, value => onTextChange(current => `${current}${current && !/\s$/.test(current) ? ' ' : ''}${value}`.slice(0, 12000)), onError);
   const [submitting, setSubmitting] = useState(false);
+  const { editor, menu } = useComposerEditor({ draft, onChange: onDraftChange, onSubmit: () => void submit(), onError, disabled: !ready || submitting });
+  const voice = useDictation(sessionId, value => appendText(editor, value), onError);
   const recording = voice.state === 'recording' || voice.state === 'connecting';
   const level = useVoiceLevel(voice.state === 'recording', voice.inputStream);
-  const preview = voice.preview ? `${text && !/\s$/.test(text) ? ' ' : ''}${voice.preview}` : '';
-  const canSend = ready && !busy && !submitting && Boolean((text + preview).trim());
+  const canSend = ready && !busy && !uploading && !submitting && Boolean(editor?.getText().trim() || voice.preview || attachments.length);
   async function submit() {
-    if (!canSend) return;
-    const draft = `${text}${preview}`.slice(0, 12000);
+    if (!canSend || !editor) return;
     const spoken = voice.preview;
+    appendText(editor, spoken);
     voice.cancel();
-    onTextChange(draft);
+    const content = editor.getJSON();
+    const text = editor.getText({ blockSeparator: '\n' });
+    const command = draftCommand(content);
     setSubmitting(true); onError('');
+    editor.commands.clearContent();
     try {
-      onTextChange(current => current === draft ? '' : current);
       const validate = spoken ? async () => {
         const result = await api<{ text: string }>('/validate-transcript', jsonBody({ sessionId, text: spoken }));
         if (!result.text) onError('未识别到中文或英文');
         return Boolean(result.text);
       } : undefined;
-      if (!await onSend(draft, false, validate)) onTextChange(current => current || draft);
-    } catch (error) { onTextChange(current => current || draft); onError(dictationError(error)); }
+      if (!await onSend(text, false, validate, command)) editor.commands.setContent(content);
+    } catch (error) { editor.commands.setContent(content); onError(dictationError(error)); }
     finally { setSubmitting(false); }
   }
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-1 flex w-full max-w-[660px] shrink-0 flex-col gap-3 rounded-[28px] bg-[#151515] px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.15)] sm:px-5 lg:mb-[18px]" aria-label="输入区">
-      <motion.textarea value={`${text}${preview}`.slice(0, 12000)} onChange={event => { const value = event.target.value; if (preview && value.endsWith(preview)) onTextChange(value.slice(0, -preview.length)); else { onTextChange(value); voice.setPreview(''); } }} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void submit(); } }} rows={2} aria-label="消息" placeholder="有什么想和我分享的吗？" maxLength={12000} className="w-full min-w-0 resize-none border-0 bg-transparent p-0 text-sm leading-6 tracking-wider text-white outline-none placeholder:text-[#8d8d8d] sm:text-base" />
-      <motion.div className="flex w-full items-center justify-between">
-        <motion.div className="flex items-center gap-2">
-          <WorkspaceTools layoutMode={layoutMode} onToggleLayout={onToggleLayout} onSettings={onSettings} ready={ready} className={iconButton} />
-          <motion.button type="button" disabled aria-label="添加附件" className={iconButton}><Paperclip size={14} strokeWidth={1.75} /></motion.button>
+      <div className="relative" onPasteCapture={event => {
+        const file = event.clipboardData.files[0];
+        if (file) { event.preventDefault(); if (!busy && !uploading && !submitting) void onUpload(file); }
+      }}>
+        {editor?.isEmpty && !voice.preview && <div aria-hidden className="pointer-events-none absolute top-0 text-sm leading-7 tracking-wider text-[#8d8d8d] sm:text-base">有什么想和我分享的吗？</div>}
+        <EditorContent editor={editor} />
+        {voice.preview && <motion.p role="status" className="mt-1 text-sm text-white/50">{voice.preview}</motion.p>}
+      </div>
+      <ShortcutMenu menu={menu} />
+      <motion.div className="flex h-[50px] w-full shrink-0 items-center justify-between">
+        <motion.div className="flex min-w-0 items-center gap-2">
+          <WorkspaceTools layoutMode={layoutMode} onToggleLayout={onToggleLayout} onSettings={onSettings} ready={ready} className={composerButtonClass} />
+          <ComposerAttachmentButton disabled={!ready || busy || uploading || submitting || attachments.length >= 5} uploading={uploading} onUpload={onUpload} />
+          {attachments.length > 0 && <AttachmentList files={attachments} sessionId={sessionId} disabled={busy || submitting} onRemove={id => void onRemoveAttachment(id)} />}
         </motion.div>
         <VoiceWave active={recording} level={level} />
         <motion.div className="flex shrink-0 items-center gap-2">
-          <motion.button type="button" disabled={!(voiceReady || (sessionId && voice.browserSupported)) || busy || submitting || voice.state === 'transcribing'} onClick={voice.toggle} aria-label={recording ? '结束录音' : '开始录音'} aria-pressed={recording} whileTap={{ scale: 0.95 }} className={`${iconButton} ${recording ? 'bg-[#FC4C01]' : ''} disabled:opacity-40`}><Mic size={14} strokeWidth={1.75} /></motion.button>
-          <motion.button type="button" disabled={!canSend} onClick={() => void submit()} aria-label="发送消息" whileTap={{ scale: 0.95 }} className={`${iconButton} enabled:bg-[#FC4C01] disabled:opacity-40`}><ArrowUp size={14} strokeWidth={canSend ? 3 : 1.75} /></motion.button>
+          <ComposerButton type="button" disabled={!(voiceReady || (sessionId && voice.browserSupported)) || busy || submitting || voice.state === 'transcribing'} onClick={voice.toggle} aria-label={recording ? '结束录音' : '开始录音'} aria-pressed={recording} whileTap={{ scale: 0.95 }} className={`${composerButtonClass} ${recording ? 'bg-[#FC4C01]' : ''}`}><Mic size={16} strokeWidth={1.75} /></ComposerButton>
+          <ComposerButton type="button" disabled={!canSend} onClick={() => void submit()} aria-label="发送消息" whileTap={{ scale: 0.95 }} className={`${composerButtonClass} enabled:bg-[#FC4C01]`}><ArrowUp size={16} strokeWidth={canSend ? 3 : 1.75} /></ComposerButton>
         </motion.div>
       </motion.div>
+      {uploading && <span role="status" className="sr-only">上传中…</span>}
     </motion.div>
   );
 }

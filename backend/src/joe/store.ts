@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { nanoid } from 'nanoid';
 import { dayKey, settingsSchema, type Expression } from './schema';
 import { clearLegacySessions } from './clear-legacy-sessions';
+import type { ShortcutId } from '../../../shared/shortcuts';
 
 export type Message = {
   id: string;
@@ -13,13 +14,15 @@ export type Message = {
   turnId: string;
   role: 'user' | 'assistant';
   text: string;
+  command?: ShortcutId;
   kind?: 'greeting';
   audioUrl?: string;
   sources?: { title: string; url: string }[];
   status: string;
+  error?: string;
   model: string;
   expression: Expression;
-  attachments: { id: string; name: string }[];
+  attachments: { id: string; name: string; mime?: string }[];
   createdAt: number;
 };
 export class Store {
@@ -31,6 +34,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, session TEXT NOT NULL REFERENCES sessions(id), turn TEXT NOT NULL, role TEXT NOT NULL, data TEXT NOT NULL, UNIQUE(turn,role));
       CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, session TEXT NOT NULL REFERENCES sessions(id), name TEXT NOT NULL, text TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS attachment_images (id TEXT PRIMARY KEY REFERENCES attachments(id) ON DELETE CASCADE,
+        mime TEXT NOT NULL, bytes BLOB NOT NULL, received_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS usage (id TEXT PRIMARY KEY, time INTEGER NOT NULL, kind TEXT NOT NULL, model TEXT NOT NULL, input INTEGER, output INTEGER, cost REAL, status TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS usage_lookup (usage_id TEXT NOT NULL, provider TEXT NOT NULL, reference TEXT NOT NULL,
@@ -108,11 +113,16 @@ export class Store {
       .run(JSON.stringify(data));
     return data;
   }
-  attach(session: string, name: string, text: string) {
+  attach(session: string, name: string, text: string, image?: { mime: string; bytes: Uint8Array }) {
     this.requireSession(session);
     const id = nanoid();
-    this.db.prepare('INSERT INTO attachments VALUES (?,?,?,?)').run(id, session, name, text);
-    return { id, name };
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('INSERT INTO attachments VALUES (?,?,?,?)').run(id, session, name, text);
+      if (image) this.db.prepare('INSERT INTO attachment_images VALUES (?,?,?,?)').run(id, image.mime, image.bytes, new Date().toISOString());
+      this.db.exec('COMMIT');
+    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    return { id, name, ...(image ? { mime: image.mime } : {}) };
   }
   attachment(session: string, id: string) {
     const row = this.db
@@ -123,7 +133,12 @@ export class Store {
       id: String(row.id),
       name: String(row.name),
       text: String(row.text),
+      image: this.image(session, id),
     };
+  }
+  image(session: string, id: string) {
+    const row = this.db.prepare(`SELECT i.* FROM attachment_images i JOIN attachments a ON a.id=i.id WHERE a.session=? AND a.id=?`).get(session, id);
+    return row ? { mime: String(row.mime), bytes: Buffer.from(row.bytes as Uint8Array), receivedAt: String(row.received_at) } : undefined;
   }
   deleteAttachment(session: string, id: string) {
     if (this.messages(session).some((m) => m.attachments.some((a) => a.id === id)))

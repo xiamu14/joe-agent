@@ -172,6 +172,7 @@ test('invalid structured output fails without leaking JSON into restored history
     const history = await conversationMessages(sessionId);
     assert.equal(history.length, 2);
     assert.equal(history[1].status, 'error');
+    assert.equal(history[1].error, error.message);
     assert.equal(history[1].text, '');
   } finally {
     globalThis.fetch = original;
@@ -354,7 +355,7 @@ test('agent invokes city weather tool before producing its final answer', async 
   }
 });
 
-test('widget tool result opens a card before the final answer', async () => {
+for (const card of ['costs', 'finance'] as const) test(`widget tool shows and hides ${card} without losing its identity`, async () => {
   const original = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
@@ -362,7 +363,7 @@ test('widget tool result opens a card before the final answer', async () => {
     const frame = (delta: unknown, reason: string | null) =>
       `data: ${JSON.stringify({ id: 'widget-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
     const body = calls % 2 === 1
-      ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: `widget-call-${calls}`, type: 'function', function: { name: 'presentWidget', arguments: JSON.stringify({ card: 'costs', visible: calls === 1 }) } }] }, null) + frame({}, 'tool_calls')
+      ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: `widget-call-${calls}`, type: 'function', function: { name: 'presentWidget', arguments: JSON.stringify({ card, visible: calls === 1 }) } }] }, null) + frame({}, 'tool_calls')
       : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"已显示费用。"}') + frame({}, 'stop');
     return new Response(body + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
   };
@@ -370,8 +371,13 @@ test('widget tool result opens a card before the final answer', async () => {
     const sessionId = store.session(), turnId = nanoid();
     const events: any[] = [];
     await readEvents(await chat({ sessionId, turnId, text: '显示费用', model: 'openai/test' }, new AbortController().signal), e => events.push(e));
-    assert.deepEqual(events.find(e => e.type === 'card.open'), { type: 'card.open', sessionId, turnId, card: 'costs' });
-    assert.ok(events.findIndex(e => e.type === 'card.open') < events.findIndex(e => e.type === 'message.completed'));
+    if (card === 'costs') {
+      assert.deepEqual(events.find(e => e.type === 'card.open'), { type: 'card.open', sessionId, turnId, card });
+      assert.ok(events.findIndex(e => e.type === 'card.open') < events.findIndex(e => e.type === 'message.completed'));
+    }
+    const snapshot = events.find(e => e.type === 'widget.snapshot');
+    assert.equal(snapshot?.instance.widgetType, `builtin.${card}`, JSON.stringify(events));
+    assert.equal(snapshot.instance.visible, true);
     assert.equal(events.at(-1).message.status, 'complete');
     const hidden: any[] = [];
     await readEvents(await chat({ sessionId, turnId: nanoid(), text: '隐藏费用', model: 'openai/test' }, new AbortController().signal), e => hidden.push(e));

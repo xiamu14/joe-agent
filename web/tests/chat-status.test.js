@@ -7,7 +7,8 @@ test('backend progress uses RareUI built-in animated states', () => {
   assert.equal(chatStatus('tool-running', true).state, 'researching');
   assert.equal(chatStatus('responding', true).state, 'writing');
   assert.equal(chatStatus('idle', true).state, 'done');
-  for (const state of ['error', 'offline', 'blocked']) assert.equal(chatStatus(state, true).state, 'error');
+  for (const state of ['error', 'offline']) assert.equal(chatStatus(state, true).state, 'error');
+  assert.deepEqual(chatStatus('blocked', true), { state: 'thinking', label: '等待响应' });
   assert.deepEqual(chatStatus('idle', false), { state: 'thinking', label: '连接中' });
   assert.equal(chatStatus('offline', false).state, 'error');
 });

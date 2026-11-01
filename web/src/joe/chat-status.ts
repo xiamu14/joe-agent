@@ -9,7 +9,7 @@ const statuses = {
   responding: { state: 'writing', label: '回复中' },
   speaking: { state: 'writing', label: '回复中' },
   interrupted: { state: 'done', label: '已停止' },
-  blocked: { state: 'error', label: '暂不可用' },
+  blocked: { state: 'thinking', label: '等待响应' },
   error: { state: 'error', label: '发生故障了' },
   offline: { state: 'error', label: '未连接' },
 } as const;

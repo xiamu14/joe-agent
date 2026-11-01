@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { validateResource, type ResourceSchema } from './widget-resources';
 
 const id = z.string().regex(/^[A-Za-z0-9_-]{21}$/);
-const widgetType = z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video']);
+const widgetType = z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video', 'builtin.finance']);
 const commandBase = { protocolVersion: z.literal(1), commandId: id, canvasId: id, instanceId: id, expectedRevision: z.number().int().nonnegative() };
 export const widgetCommandSchema = z.discriminatedUnion('type', [
   z.object({ ...commandBase, type: z.literal('widget.present'), widgetType, bindings: z.record(z.string(), z.object({ resourceId: id, pointer: z.literal('') })), view: z.object({ kind: z.literal('registered'), name: z.string(), version: z.literal(1) }), visible: z.boolean().default(true) }),
@@ -13,7 +13,7 @@ export const widgetCommandSchema = z.discriminatedUnion('type', [
 ]);
 type Command = z.infer<typeof widgetCommandSchema>;
 type Instance = { protocolVersion: 1; canvasId: string; instanceId: string; widgetType: z.infer<typeof widgetType>; revision: number; visible: boolean; bindings: Record<string, { resourceId: string; pointer: string }>; view: { kind: 'registered'; name: string; version: 1 } };
-const names: Record<Instance['widgetType'], string> = { 'builtin.costs': 'costs', 'builtin.settings': 'settings', 'builtin.weather': 'weather', 'youtube.video': 'video' };
+const names: Record<Instance['widgetType'], string> = { 'builtin.costs': 'costs', 'builtin.settings': 'settings', 'builtin.weather': 'weather', 'youtube.video': 'video', 'builtin.finance': 'finance' };
 
 export class WidgetStore {
   constructor(private db: DatabaseSync) {
@@ -37,7 +37,7 @@ export class WidgetStore {
     this.db.prepare('INSERT INTO widget_session_canvases VALUES (?,?)').run(sessionId, canvasId);
     return canvasId;
   }
-  initializeCanvas(canvasId: string, cards: ('costs' | 'settings' | 'weather' | 'video')[]) {
+  initializeCanvas(canvasId: string, cards: ('costs' | 'settings' | 'weather' | 'video' | 'finance')[]) {
     this.requireCanvas(canvasId);
     if (this.db.prepare('SELECT canvas_id FROM widget_canvas_initialized WHERE canvas_id=?').get(canvasId)) return;
     for (const card of cards) {
@@ -46,7 +46,7 @@ export class WidgetStore {
     }
     this.db.prepare('INSERT OR IGNORE INTO widget_canvas_initialized VALUES (?)').run(canvasId);
   }
-  presentBuiltin(canvasId: string, card: 'costs' | 'settings' | 'weather' | 'video', visible = true) {
+  presentBuiltin(canvasId: string, card: 'costs' | 'settings' | 'weather' | 'video' | 'finance', visible = true) {
     const widgetType = card === 'video' ? 'youtube.video' : `builtin.${card}`;
     const current = this.snapshot(canvasId).instances.find((instance: Instance) => instance.widgetType === widgetType) as Instance | undefined;
     if (current?.visible === visible) return current;
@@ -56,9 +56,9 @@ export class WidgetStore {
       : this.command({ ...base, type: 'widget.present', widgetType, bindings: {}, view: { kind: 'registered', name: card, version: 1 }, visible });
     return event.instance as Instance;
   }
-  presentData(canvasId: string, card: 'weather' | 'video', data: unknown, expectedRevision: number) {
-    const widgetType = card === 'video' ? 'youtube.video' : 'builtin.weather';
-    const schema = card === 'video' ? 'youtube.search@1' : 'weather@1';
+  presentData(canvasId: string, card: 'weather' | 'video' | 'finance', data: unknown, expectedRevision: number) {
+    const widgetType = card === 'video' ? 'youtube.video' : card === 'finance' ? 'builtin.finance' : 'builtin.weather';
+    const schema = card === 'video' ? 'youtube.search@1' : card === 'finance' ? 'finance.accounts@1' : 'weather@1';
     const current = this.snapshot(canvasId).instances.find((item: Instance) => item.widgetType === widgetType) as Instance | undefined;
     if ((current?.revision ?? 0) !== expectedRevision) throw new Error('卡片已更改，请重新请求');
     const resourceId = current?.bindings.data?.resourceId ?? current?.bindings.weather?.resourceId ?? nanoid();

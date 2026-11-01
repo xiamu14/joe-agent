@@ -8,8 +8,8 @@ import type { WidgetStore } from './widget-store';
 const target = z.object({ id: idSchema.optional(), name: z.string().trim().min(1).max(80).optional() });
 const changes = z.array(z.discriminatedUnion('type', [
     z.object({ type: z.literal('canvas.rename'), name: z.string().trim().min(1).max(80) }),
-    z.object({ type: z.literal('widget.retain'), selector: z.object({ widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video']) }) }),
-    z.object({ type: z.literal('widget.visibility'), widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video']), visible: z.boolean() }),
+    z.object({ type: z.literal('widget.retain'), selector: z.object({ widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video', 'builtin.finance']) }) }),
+    z.object({ type: z.literal('widget.visibility'), widgetType: z.enum(['builtin.costs', 'builtin.settings', 'builtin.weather', 'youtube.video', 'builtin.finance']), visible: z.boolean() }),
   ])).min(1).max(20);
 export const canvasEditSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('inspect') }),

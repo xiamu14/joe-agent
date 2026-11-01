@@ -52,6 +52,7 @@ export const chatSchema = z
     model: z.string().max(150),
     clientIp: z.string().refine(value => isIP(value) !== 0).optional(),
     attachmentIds: z.array(idSchema).max(5).default([]),
+    command: z.enum(['tally']).optional(),
     desktop: desktopStateSchema.optional(),
   })
   .refine((v) => v.text.length > 0 || v.attachmentIds.length > 0, '请输入消息或添加文件');
