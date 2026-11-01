@@ -9,10 +9,11 @@ import { FinanceCard } from '../src/joe/finance/finance-card';
 import type { Attachment } from '../src/joe/types';
 import '../src/style.css';
 
+const hoverPreview = new URLSearchParams(location.search).has('hover');
 function Fixture() {
   const [draft, setDraft] = useState(emptyDraft);
   const [files, setFiles] = useState<Attachment[]>([]);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(hoverPreview);
   const [error, setError] = useState('');
   const scene = useCanvasSceneState({ ...createCanvasLayout(42), finance: { x: 0, y: 0, rotation: -3 } }, { x: 0, y: 0 }, () => {});
   const data = { accounts: ['招商银行', '中国银行', '建设银行', '工商银行'].map((bank, i) => ({
@@ -20,7 +21,7 @@ function Fixture() {
       id: `balance-${i}`, balanceMinor: 123456 + i * 10000, rawBalance: '1,234.56', observedAt: '2026-11-01T12:00:00Z', receivedAt: '2026-11-01T12:00:00Z', attachmentId: 'fixture',
     }],
   })) };
-  return <MotionConfig reducedMotion="always"><main className="flex h-dvh flex-col bg-[#111114] p-8 text-white">
+  return <MotionConfig reducedMotion={hoverPreview ? 'user' : 'always'}><main className="flex h-dvh flex-col bg-[#111114] p-8 text-white">
     <div ref={scene.canvas} className="relative min-h-0 flex-1 [container-type:size]">
       <CanvasSceneContext value={scene}>{sent && <FinanceCard data={data} />}</CanvasSceneContext>
     </div>

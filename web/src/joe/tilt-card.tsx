@@ -13,7 +13,7 @@ import { cardLayer, cardWidths, type CanvasCardId } from './canvas-layout';
 const MotionButton = motion.create(Button);
 const spring = { type: 'spring' as const, stiffness: 240, damping: 28 };
 
-export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, expandedActions, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
+export function TiltCard({ id, children, className = '', surfaceClassName, label, onExpand, onClose, onHoverChange, expandedActions, expandedWidth = '66.666667%', expandedHeight = 'auto', expandedScroll = true, animateExpandedSize = false }: {
   id: CanvasCardId;
   children: ReactNode | ((layoutExpanded: boolean) => ReactNode);
   className?: string;
@@ -21,6 +21,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
   label: string;
   onExpand?: () => void;
   onClose?: () => void;
+  onHoverChange?: (hovered: boolean) => void;
   expandedActions?: ReactNode;
   expandedWidth?: string;
   expandedHeight?: string;
@@ -55,6 +56,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
     x.set(tilt.rotateX); y.set(tilt.rotateY);
   }
   function reset() {
+    onHoverChange?.(false);
     scene.hoverIntent.leave(id);
     x.set(0); y.set(0);
   }
@@ -84,7 +86,7 @@ export function TiltCard({ id, children, className = '', surfaceClassName, label
         x: panX, y: panY,
         zIndex: cardLayer(id, scene.selection?.id ?? null, scene.foreground, scene.dragging),
       }}
-      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverEnd={reset} onPointerDown={drag.down} onPointerUp={drag.end} onLostPointerCapture={drag.end} onPointerCancel={event => { drag.end(event); reset(); }} onPointerMove={event => {
+      onClickCapture={() => { if (!selected) rememberFocus(); }} onHoverStart={() => onHoverChange?.(true)} onHoverEnd={reset} onPointerDown={drag.down} onPointerUp={drag.end} onLostPointerCapture={drag.end} onPointerCancel={event => { drag.end(event); reset(); }} onPointerMove={event => {
         drag.move(event);
         if (!reduced && !selected && !blocked && !scene.dragging && event.buttons === 0 && event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scene.hoverIntent.move(id, { x: event.clientX, y: event.clientY });
         if (!scene.dragging) follow(event);
