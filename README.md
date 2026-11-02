@@ -2,6 +2,10 @@
 
 本地单用户 AI 助手，支持文字与语音对话、卡片画布和截图记账。
 
+![Joe 工作空间](docs/media/workspace.png)
+
+[观看演示视频](docs/media/demo.mp4) · 35 秒
+
 ## 启动
 
 需要 Bun 1.3.14+ 和 Node.js 22.13+（推荐 Node.js 24）。
