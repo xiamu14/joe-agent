@@ -25,6 +25,38 @@ test('titles require a unique exact match, not simply a single result', () => {
   assert.equal(uniqueTitleMatch(video.title, [video, { ...video, id: 'jNQXAC9IVRw' }]), undefined);
   assert.equal(uniqueTitleMatch(video.title, [video, video])?.id, id);
 });
+test('recent title and channel resolution never searches or replaces search results', async t => {
+  t.mock.method(globalThis, 'fetch', () => assert.fail('recent playback must not search'));
+  const db = new DatabaseSync(':memory:');
+  t.after(() => db.close());
+  const store = new WidgetStore(db), canvas = store.createCanvas();
+  store.presentData(canvas, 'video', { query: 'original', videos: [video] }, 0);
+  const before = store.snapshot(canvas).resources;
+  const requestContext = new RequestContext();
+  requestContext.set('video.begin', () => assert.fail('must retain search results'));
+  requestContext.set('widget.present', (card: 'video', visible: boolean) => store.presentBuiltin(canvas, card, visible));
+  requestContext.set('video.recent', [video]);
+  for (const query of ['Example', 'Channel']) {
+    const result = await playYouTube.execute!({ query }, { requestContext } as never);
+    if ('error' in result) assert.fail(JSON.stringify(result));
+    assert.equal(result.playback?.video.id, id);
+    assert.deepEqual(store.snapshot(canvas).resources, before);
+  }
+  const sameChannel = { ...video, id: 'jNQXAC9IVRw', title: 'Another video' };
+  requestContext.set('video.recent', [video, sameChannel]);
+  const ambiguous = await playYouTube.execute!({ query: 'Channel' }, { requestContext } as never);
+  if ('error' in ambiguous) assert.fail(JSON.stringify(ambiguous));
+  assert.equal(ambiguous.playback, undefined);
+  assert.equal(ambiguous.candidates?.length, 2);
+  const output = playYouTube.toModelOutput?.(ambiguous as never);
+  assert.deepEqual(output, { type: 'json', value: { summary: ambiguous.summary, candidates: [video, sameChannel].map(({ id, title, channel }, index) => ({ option: index + 1, title, channel, url: `https://www.youtube.com/watch?v=${id}` })) } });
+  const missing = await playYouTube.execute!({ query: 'missing', scope: 'recent' }, { requestContext } as never);
+  if ('error' in missing) assert.fail(JSON.stringify(missing));
+  assert.equal(missing.playback, undefined);
+  assert.deepEqual(missing.candidates, []);
+  assert.match(missing.summary, /最近播放里没找到/);
+  assert.deepEqual(store.snapshot(canvas).resources, before);
+});
 test('direct playback retains persisted search results and bindings without calling search', async t => {
   t.mock.method(globalThis, 'fetch', () => assert.fail('direct links must not search'));
   const db = new DatabaseSync(':memory:');
@@ -100,5 +132,7 @@ test('title resolution preserves search on exact match and publishes ambiguous c
   if ('error' in ambiguous) assert.fail(JSON.stringify(ambiguous));
   assert.equal(ambiguous.playback, undefined);
   assert.equal(ambiguous.widget?.resource.schema, 'youtube.search@1');
+  assert.equal(ambiguous.candidates?.length, 2);
+  assert.match(ambiguous.summary, /回复序号/);
   assert.equal(store.snapshot(canvas).resources[0].data.videos.length, 2);
 });

@@ -52,13 +52,13 @@ export function WorkspaceInput({ draft, onDraftChange, onSend, ready, busy, sess
   }
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-1 flex w-full max-w-[660px] shrink-0 flex-col gap-3 rounded-[28px] bg-[#151515] px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.15)] sm:px-5 lg:mb-[18px]" aria-label="输入区">
-      <div className="relative" onPasteCapture={event => {
+      <div className="relative grid" onPasteCapture={event => {
         const file = event.clipboardData.files[0];
         if (file) { event.preventDefault(); if (!busy && !uploading && !submitting) void onUpload(file); }
       }}>
         {editor?.isEmpty && !voice.preview && <div aria-hidden className="pointer-events-none absolute top-0 text-sm leading-7 tracking-wider text-[#8d8d8d] sm:text-base">有什么想和我分享的吗？</div>}
-        <EditorContent editor={editor} />
-        {voice.preview && <motion.p role="status" className="mt-1 text-sm text-white/50">{voice.preview}</motion.p>}
+        <EditorContent editor={editor} className="col-start-1 row-start-1 min-w-0" />
+        {voice.preview && <motion.p role="status" className={`${editor?.isEmpty ? 'pointer-events-none col-start-1 row-start-1 self-start' : 'mt-1'} min-w-0 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-7 text-white/50 sm:text-base`}>{voice.preview}</motion.p>}
       </div>
       <ShortcutMenu menu={menu} />
       <motion.div className="flex h-[50px] w-full shrink-0 items-center justify-between">

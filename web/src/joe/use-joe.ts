@@ -1,4 +1,5 @@
 import { useAttachments } from './composer/use-attachments';
+import { readRecentVideos } from './video/use-video-history';
 import { publishCanvasChange, subscribeCanvasChanges } from './canvas-updates';
 import type { ShortcutId } from '../../../shared/shortcuts';
 import { isVideoPlaybackRequest, type VideoPlaybackRequest } from '../../../shared/video-playback';
@@ -310,6 +311,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
           command,
           model,
           attachmentIds: attachments.map((a) => a.id),
+          recentVideos: readRecentVideos().map(({ id, title, channel }) => ({ id, title, channel })),
           clientIp,
         }),
         signal: abort.current.signal,

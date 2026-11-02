@@ -128,6 +128,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
         }
         const requestContext = new RequestContext();
         requestContext.set('model', model.id);
+        if (!input.desktop) requestContext.set('video.recent', input.recentVideos);
         if (!input.desktop) requestContext.set('canvas.edit', (edit: Parameters<typeof editCanvas>[1]) => {
           signal.throwIfAborted();
           const change = editCanvas(widgetStore.canvasForSession(input.sessionId), edit, canvasStore, widgetStore);
@@ -171,7 +172,7 @@ export async function chat(body: unknown, requestSignal: AbortSignal) {
           onStepFinish: (step) => {
             trackGeneration(input.turnId, step);
           },
-          structuredOutput: { schema: answerSchema, jsonPromptInjection: true },
+          structuredOutput: { schema: answerSchema, jsonPromptInjection: false },
           memory: { thread: threadId(input.sessionId), resource: resourceId },
         });
         traceId = result.traceId;

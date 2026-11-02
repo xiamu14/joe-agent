@@ -32,6 +32,9 @@ test('Mastra streams through the configured adapter and persists expression and 
     assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions');
     calls++;
     const request = JSON.parse(String(init?.body));
+    assert.equal(request.response_format?.type, 'json_schema');
+    assert.ok(request.response_format.json_schema.schema.properties.expression);
+    assert.ok(request.response_format.json_schema.schema.properties.text);
     requests.push(request);
     for (const tool of request.tools) {
       assert.equal(tool.function.parameters.type, 'object', `${tool.function.name} must have object parameters`);
@@ -305,6 +308,7 @@ test('agent invokes city weather tool before producing its final answer', async 
     }
     llmCalls++;
     const request = JSON.parse(String(init?.body));
+    assert.equal(request.response_format?.type, 'json_schema', 'tool continuations must keep native output constraints');
     assert.ok(request.tools.some((tool: any) => tool.function.name === 'getWeather'));
     const frame = (delta: unknown, reason: string | null) =>
       `data: ${JSON.stringify({ id: 'weather-test', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
@@ -324,7 +328,7 @@ test('agent invokes city weather tool before producing its final answer', async 
             },
             null,
           ) + frame({}, 'tool_calls')
-        : modelFrame('东京目前多云，22°C。') +
+        : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"东京目前多云，22°C。"}') +
           frame({}, 'stop');
     return new Response(body + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
   };
@@ -448,6 +452,30 @@ test('video search delivers resource and visible card in tool result', async () 
     assert.ok(events.findIndex(event => event.type === 'card.open') > events.findIndex(event => event.type === 'widget.snapshot'));
     assert.equal(events.at(-1).message.status, 'complete');
   } finally { globalThis.fetch = original; if (key === undefined) delete process.env.DATA_MCP_URL; else process.env.DATA_MCP_URL = key; }
+});
+
+test('chat supplies recent browser videos to playback without a network search', async t => {
+  let calls = 0;
+  const video = { id: 'SFoUryIjsIs', title: 'OpenDots: Run 100% Free Self-Hosted AI Coworkers Locally (OpenAI Dots Open Source)', channel: 'AI Vibe Coder' };
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions');
+    calls++;
+    if (calls === 2) {
+      const request = JSON.parse(String(init?.body));
+      assert.match(request.messages.find((m: any) => m.role === 'tool').content, /OpenDots: Run 100% Free/);
+    }
+    const frame = (delta: unknown, reason: string | null) => `data: ${JSON.stringify({ id: 'recent-video', object: 'chat.completion.chunk', created: 1, model: 'openai/test', choices: [{ index: 0, delta, finish_reason: reason }] })}\n\n`;
+    const content = calls === 1
+      ? frame({ role: 'assistant', tool_calls: [{ index: 0, id: 'recent-call', type: 'function', function: { name: 'playYouTube', arguments: '{"query":"opendots run 100% free","scope":"auto"}' } }] }, null) + frame({}, 'tool_calls')
+      : modelFrame('{"expression":{"emotion":"calm","intensity":0.3},"text":"已请求播放。"}') + frame({}, 'stop');
+    return new Response(content + 'data: [DONE]\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
+  });
+  const events: any[] = [];
+  await readEvents(await chat({ sessionId: store.session(), turnId: nanoid(), text: '播放 opendots run 100% free 视频', model: 'openai/test', recentVideos: [video] }, new AbortController().signal), e => events.push(e));
+  assert.equal(calls, 2);
+  assert.equal(events.find(e => e.type === 'video.play')?.playback.video.id, video.id);
+  assert.equal(events.some(e => e.type === 'resource.snapshot'), false);
+  assert.equal(events.at(-1).message.status, 'complete');
 });
 
 test.after(async () => {

@@ -1,4 +1,5 @@
 import { desktopStateSchema } from './desktop';
+import { recentVideosSchema } from './recent-videos';
 import { z } from 'zod';
 import { isIP } from 'node:net';
 export const emotionSchema = z.enum([
@@ -52,6 +53,7 @@ export const chatSchema = z
     model: z.string().max(150),
     clientIp: z.string().refine(value => isIP(value) !== 0).optional(),
     attachmentIds: z.array(idSchema).max(5).default([]),
+    recentVideos: recentVideosSchema.default([]),
     command: z.enum(['tally']).optional(),
     desktop: desktopStateSchema.optional(),
   })

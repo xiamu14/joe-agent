@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JoeRouteImport } from './routes/joe'
 import { Route as JoeLegcyRouteImport } from './routes/joe-legcy'
-import { Route as PreviewRouteImport } from './routes/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,44 +28,35 @@ const JoeLegcyRoute = JoeLegcyRouteImport.update({
   path: '/joe-legcy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PreviewRoute = PreviewRouteImport.update({
-  id: '/preview',
-  path: '/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
   '/joe-legcy': typeof JoeLegcyRoute
-  '/preview': typeof PreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
   '/joe-legcy': typeof JoeLegcyRoute
-  '/preview': typeof PreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/joe': typeof JoeRoute
   '/joe-legcy': typeof JoeLegcyRoute
-  '/preview': typeof PreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/joe' | '/joe-legcy' | '/preview'
+  fullPaths: '/' | '/joe' | '/joe-legcy'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/joe' | '/joe-legcy' | '/preview'
-  id: '__root__' | '/' | '/joe' | '/joe-legcy' | '/preview'
+  to: '/' | '/joe' | '/joe-legcy'
+  id: '__root__' | '/' | '/joe' | '/joe-legcy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JoeRoute: typeof JoeRoute
   JoeLegcyRoute: typeof JoeLegcyRoute
-  PreviewRoute: typeof PreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,13 +82,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoeLegcyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/preview': {
-      id: '/preview'
-      path: '/preview'
-      fullPath: '/preview'
-      preLoaderRoute: typeof PreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -106,7 +89,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JoeRoute: JoeRoute,
   JoeLegcyRoute: JoeLegcyRoute,
-  PreviewRoute: PreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

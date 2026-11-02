@@ -11,6 +11,8 @@ export const mastra = new Mastra({
     configs: {
       default: {
         serviceName: 'joe',
+        // LibSQL supports traces but not batch log storage; console logging remains enabled.
+        logging: { enabled: false },
         exporters: [new MastraStorageExporter()],
         spanOutputProcessors: [new SensitiveDataFilter()],
       },

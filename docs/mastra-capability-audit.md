@@ -108,8 +108,8 @@ JoeVoice 继承 MastraVoice，Fish/ElevenLabs 的 listen/speak 仍自行发 HTTP
 - 替换前需逐项验证 File/MIME 保留、所选模型、AbortSignal、错误码、request-id/character-cost、音频格式。现有代码的 speakStream 使用 PCM 24000 + 字符时间戳，createRealtimeSession 发浏览器短期令牌；未确认官方 Provider 完整覆盖这两条路径，不能直接删除。
 - Fish 官方等价适配未核实；可保留最薄 MastraVoice 适配器，不能仅为减少代码换供应商或丢失时长回调。
 - ASR/TTS 分供应商可由 CompositeVoice(input/output) 组合。现有语种音色选择、配置验证、实时令牌和字幕扩展仍有独立职责；CompositeVoice 不会自动接管这些。
-- speech-text.ts 与 input-language.ts 已使用 Agent.generate，不是裸 HTTP 模型请求。建议注册到 Mastra agents，使配置/追踪生命周期统一；注册本身不会自动把多个独立 HTTP 请求串成一条父子 trace。
-- input-language.ts 是固定选项分类，core Classifier 在语义上更合适，但必须提供 DecisionModel。config.ts 虽导出 decisionModels，运行代码没有使用它；仅添加 typesafe/jev-1.14 字符串不能接通分类模型。需匹配 Provider/凭据并验证分类效果、延迟和费用后迁移。
+- speech-text.ts 使用 Agent.generate，可评估注册到 Mastra agents 统一追踪。input-language.ts 改为 OpenRouter Decisions API；Jev 不是聊天模型，不能用 Agent.generate 的 Chat Completions 协议。
+- input-language.ts 从 decisionModels 选择 Jev，通过 POST /api/alpha/decisions 发送 state 与 choice questions，校验 answers 并记录返回的用量和费用。当前未接入 OpenRouter DecisionModel，保留最薄 HTTP 调用；未来接入 Classifier 时需验证相同协议、取消和费用记录。[官方契约](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request)。
 - 前端实时 WebSocket、AudioWorklet、MediaRecorder、静音检测、浏览器 SpeechRecognition、音频时钟和字幕同步属于浏览器能力/供应商协议，未找到等价 Mastra 浏览器实现，保留。
 - “识别 → 对话 → 翻译 → 播放”横跨浏览器设备与服务端。没有必须持久执行的多步骤业务时，不为框架使用率增加 Workflow。
 

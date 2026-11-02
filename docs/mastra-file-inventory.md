@@ -15,7 +15,7 @@
 | `backend/src/joe/desktop.ts` | 输出/上下文契约已完成；client tool/suspend 改造尚未实施 |
 | `backend/src/joe/greeting.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
 | `backend/src/joe/id.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
-| `backend/src/joe/input-language.ts` | 注册现有 Agent；DecisionModel 可用时评估 Classifier |
+| `backend/src/joe/input-language.ts` | 使用 OpenRouter Decisions API；保留语种校验、取消和费用记录 |
 | `backend/src/joe/memory.ts` | 已用 Memory/LibSQLStore；保留 |
 | `backend/src/joe/routes.ts` | 已用 registerApiRoute；公共守卫迁 middleware，业务校验保留 |
 | `backend/src/joe/schema.ts` | 业务配置/ID/路径/朗读格式/问候语，保留 |
@@ -156,7 +156,6 @@
 | `web/src/routes/index.tsx` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
 | `web/src/routes/joe-legcy.tsx` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
 | `web/src/routes/joe.tsx` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
-| `web/src/routes/preview.tsx` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
 | `web/src/state.js` | React/RareUI/Motion/GLSL/路由/展示；不属于 Agent 基础设施 |
 | `web/public/pcm-capture.js` | 浏览器 AudioWorklet PCM 编码；保留 |
 | `backend/scripts/generate-greeting.ts` | 开发/构建/生成脚本；不是 Agent 框架替代范围 |
