@@ -188,6 +188,14 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     );
     if (old) cancellation.current = api('/cancel', jsonBody({ sessionId, turnId: old })).catch(() => {});
   }
+  function stopSpeech() {
+    turnVoice.current = false;
+    speechAbort.current?.abort();
+    voice.current?.stop();
+    setVoicePending(false);
+    setMessages(old => old.map(message => ({ ...message, visibleText: undefined })));
+    displayGate.release();
+  }
   const saveSettings = useCallback(async (settings: Settings) => {
     if (saving) return;
     setSaving(true);
@@ -247,6 +255,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
       accepted = false;
     const event = (event: AgentEvent) => {
       if (turn.current !== id || event.turnId !== id || !mounted.current) return;
+      if (event.type === 'video.play' && isVideoPlaybackRequest(event.playback)) stopSpeech();
       publishCanvasChange(event);
       if (event.type === 'widget.snapshot' || event.type === 'resource.snapshot' || event.type === 'card.open' || event.type === 'video.play') displayGate.receive(event);
       if (event.type === 'messages' && event.user && event.assistant) {
@@ -431,6 +440,7 @@ export function useJoe({ sessionKey = 'joe.session', initialCards = noInitialCar
     busy,
     playing,
     voicePending,
+    stopSpeech,
     cardRequest,
     videoPlayback,
     consumeVideoPlayback: (requestId: string) => setVideoPlayback(current => current?.requestId === requestId ? undefined : current),

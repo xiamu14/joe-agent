@@ -11,7 +11,6 @@ import { useVoiceLevel } from './use-voice-level';
 import { useDictation } from './use-dictation';
 import { useComposerEditor } from './composer/use-composer-editor';
 import { appendText, draftCommand } from './composer/draft';
-import { api, jsonBody } from './api';
 import { dictationError } from './voice-input/errors';
 import type { Attachment } from './types';
 import type { useJoe } from './use-joe';
@@ -29,11 +28,9 @@ export function WorkspaceInput({ draft, onDraftChange, onSend, ready, busy, sess
   const voice = useDictation(sessionId, value => appendText(editor, value), onError);
   const recording = voice.state === 'recording' || voice.state === 'connecting';
   const level = useVoiceLevel(voice.state === 'recording', voice.inputStream);
-  const canSend = ready && !busy && !uploading && !submitting && Boolean(editor?.getText().trim() || voice.preview || attachments.length);
+  const canSend = ready && !busy && !uploading && !submitting && Boolean(editor?.getText().trim() || attachments.length);
   async function submit() {
     if (!canSend || !editor) return;
-    const spoken = voice.preview;
-    appendText(editor, spoken);
     voice.cancel();
     const content = editor.getJSON();
     const text = editor.getText({ blockSeparator: '\n' });
@@ -41,12 +38,7 @@ export function WorkspaceInput({ draft, onDraftChange, onSend, ready, busy, sess
     setSubmitting(true); onError('');
     editor.commands.clearContent();
     try {
-      const validate = spoken ? async () => {
-        const result = await api<{ text: string }>('/validate-transcript', jsonBody({ sessionId, text: spoken }));
-        if (!result.text) onError('未识别到中文或英文');
-        return Boolean(result.text);
-      } : undefined;
-      if (!await onSend(text, false, validate, command)) editor.commands.setContent(content);
+      if (!await onSend(text, false, undefined, command)) editor.commands.setContent(content);
     } catch (error) { editor.commands.setContent(content); onError(dictationError(error)); }
     finally { setSubmitting(false); }
   }
@@ -56,9 +48,8 @@ export function WorkspaceInput({ draft, onDraftChange, onSend, ready, busy, sess
         const file = event.clipboardData.files[0];
         if (file) { event.preventDefault(); if (!busy && !uploading && !submitting) void onUpload(file); }
       }}>
-        {editor?.isEmpty && !voice.preview && <div aria-hidden className="pointer-events-none absolute top-0 text-sm leading-7 tracking-wider text-[#8d8d8d] sm:text-base">有什么想和我分享的吗？</div>}
+        {editor?.isEmpty && voice.state === 'idle' && <div aria-hidden className="pointer-events-none absolute top-0 text-sm leading-7 tracking-wider text-[#8d8d8d] sm:text-base">有什么想和我分享的吗？</div>}
         <EditorContent editor={editor} className="col-start-1 row-start-1 min-w-0" />
-        {voice.preview && <motion.p role="status" className={`${editor?.isEmpty ? 'pointer-events-none col-start-1 row-start-1 self-start' : 'mt-1'} min-w-0 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-7 text-white/50 sm:text-base`}>{voice.preview}</motion.p>}
       </div>
       <ShortcutMenu menu={menu} />
       <motion.div className="flex h-[50px] w-full shrink-0 items-center justify-between">

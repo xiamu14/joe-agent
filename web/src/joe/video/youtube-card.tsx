@@ -14,7 +14,7 @@ import { VideoBackdrop } from './video-backdrop';
 import { videoId, videoUrl } from './mount-youtube-player';
 
 export type VideoResults = { query: string; videos: VideoItem[] };
-export function YouTubeCard({ results, context, playback, onPlaybackHandled }: { results?: VideoResults; context?: BehaviorContext; playback?: VideoPlaybackRequest; onPlaybackHandled?(requestId: string): void }) {
+export function YouTubeCard({ results, context, playback, onPlaybackHandled, onPlaybackStart }: { results?: VideoResults; context?: BehaviorContext; playback?: VideoPlaybackRequest; onPlaybackHandled?(requestId: string): void; onPlaybackStart?(): void }) {
   const scene = useCanvasScene();
   const present = useIsPresent();
   const expanded = present && scene.selection?.id === 'video' && scene.selection.expanded;
@@ -32,9 +32,10 @@ export function YouTubeCard({ results, context, playback, onPlaybackHandled }: {
     choose(playback.video, playback.requestId);
     onPlaybackHandled?.(playback.requestId);
   }, [playback]);
-  const video = useYouTubePlayer(Boolean(expanded && selected), selected || videoId, Boolean(selected), context && selectionId ? { ...context, selectionId } : undefined, () => { if (selectedItem) record(selectedItem); });
+  const video = useYouTubePlayer(Boolean(expanded && selected), selected || videoId, Boolean(selected), context && selectionId ? { ...context, selectionId } : undefined, () => { onPlaybackStart?.(); if (selectedItem) record(selectedItem); });
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   function choose(item: VideoItem, requestId = nanoid()) {
+    onPlaybackStart?.();
     const known = results?.videos.find(video => video.id === item.id) ?? recent.find(video => video.id === item.id);
     setSelectionId(requestId);
     setSelectedItem(item.title === `YouTube · ${item.id}` && known ? known : item);
@@ -48,7 +49,7 @@ export function YouTubeCard({ results, context, playback, onPlaybackHandled }: {
   return (
     <TiltCard id="video" expandedActions={backToList} animateExpandedSize expandedScroll={false} expandedWidth={selected ? 'min(914px, calc(100cqw - 24px))' : 'min(630px, calc(100cqw - 24px))'}
       expandedHeight={selected ? 'min(1280px, calc(100cqh - 24px))' : 'min(900px, calc(100cqh - 24px))'}
-      surfaceClassName={`flex flex-col overflow-hidden rounded-[24px] ${selected ? 'bg-black' : 'bg-white'} text-black`} label="视频卡片" onExpand={() => { if (selected) video.play(); }} onClose={video.pause}>
+      surfaceClassName={`flex flex-col overflow-hidden rounded-[24px] ${selected ? 'bg-black' : 'bg-white'} text-black`} label="视频卡片" onExpand={() => { if (selected) { onPlaybackStart?.(); video.play(); } }} onClose={video.pause}>
       {layoutExpanded => <>
       <motion.div data-card-header className="flex h-14 shrink-0 items-center bg-white justify-between gap-3 px-5 text-xs">
         <motion.span className="flex items-center gap-2 text-black/60"><motion.img src="/logos/youtube.svg" alt="" draggable={false} className="h-4 w-auto shrink-0" />YouTube</motion.span>

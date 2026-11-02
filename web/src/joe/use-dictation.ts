@@ -11,7 +11,6 @@ export function useDictation(sessionId: string, onText: (text: string) => void, 
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   const setError = (message: string) => onErrorRef.current(message);
-  const [preview, setPreview] = useState('');
   const [browserSupported, setBrowserSupported] = useState(false);
   const current = useRef(0);
   const cancelCurrent = useRef<(() => void) | null>(null);
@@ -20,7 +19,7 @@ export function useDictation(sessionId: string, onText: (text: string) => void, 
   onTextRef.current = onText;
   useEffect(() => { setBrowserSupported(browserSpeechAvailable()); }, []);
   useEffect(() => {
-    setState('idle'); setPreview(''); setInputStream(null);
+    setState('idle'); setInputStream(null);
     return () => { current.current++; cancelCurrent.current?.(); };
   }, [sessionId]);
 
@@ -40,10 +39,10 @@ export function useDictation(sessionId: string, onText: (text: string) => void, 
       if (browserSpeechAvailable()) {
         capture = startBrowserSpeech(sessionId, {
           text: value => { if (token === current.current) onTextRef.current(value); },
-          preview: value => { if (token === current.current) setPreview(value); },
+          preview() {},
           stopped: () => { if (token === current.current) setState('transcribing'); },
           finished: () => { if (token === current.current) setState('idle'); },
-          failed: error => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError(dictationError(error)); } },
+          failed: error => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setState('idle'); setError(dictationError(error)); } },
         });
         setState('recording');
         return;
@@ -61,9 +60,9 @@ export function useDictation(sessionId: string, onText: (text: string) => void, 
         text: (value: string) => { if (token === current.current) onTextRef.current(value); },
         error: (error: unknown) => { if (token === current.current) setError(dictationError(error)); },
         stopped: () => { release(); if (token === current.current) setState('transcribing'); },
-        failed: (error?: unknown) => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); setError(dictationError(error, '录音失败，请重试')); } },
+        failed: (error?: unknown) => { if (token === current.current) { current.current++; cancelCurrent.current?.(); setState('idle'); setError(dictationError(error, '录音失败，请重试')); } },
         finished: () => { release(); if (token === current.current) setState('idle'); },
-        preview: (value: string) => { if (token === current.current) setPreview(value); },
+        preview() {},
       };
       capture = config.mode === 'elevenlabs-realtime' && config.token
         ? await startRealtimeDictation(stream, context, sessionId, config.token, { ...callbacks, error: callbacks.failed })
@@ -75,6 +74,6 @@ export function useDictation(sessionId: string, onText: (text: string) => void, 
       if (token === current.current) { setState('idle'); setError(dictationError(error, '无法录音，请重试')); }
     }
   }
-  const cancel = () => { current.current++; cancelCurrent.current?.(); setPreview(''); setState('idle'); };
-  return { state, inputStream, preview, setPreview, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
+  const cancel = () => { current.current++; cancelCurrent.current?.(); setState('idle'); };
+  return { state, inputStream, browserSupported, cancel, toggle: () => { if (state === 'recording' || state === 'connecting') stopCurrent.current?.(); else if (state === 'idle') void start(); } };
 }
